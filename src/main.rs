@@ -47,7 +47,7 @@ pub enum Convert {
         /// The theme file to convert to Zed format. If left out, input
         /// is read from stdin and output is written to stdout.
         #[arg(value_name = "/path/to/theme")]
-        input: Option<PathBuf>,
+        input: Option<String>,
     },
     /// Treat the input as a Zed theme and convert it tox VSCode format
     #[command(name = "zed-to-vscode", alias = "zv")]
@@ -56,7 +56,7 @@ pub enum Convert {
         /// The theme file to convert to VSCode format. If left out, input
         /// is read from stdin and output is written to stdout.
         #[arg(value_name = "/path/to/theme")]
-        input: Option<PathBuf>,
+        input: Option<String>,
     },
 }
 
@@ -91,11 +91,16 @@ fn main() -> Result<(), ThemeError> {
     match cli.command {
         Convert::VscodeToZed { input } => {
             if let Some(fname) = input {
-                // todo see if directory is an extension
-                let data = read_file(&fname)?;
-                let theme = VsCodeTheme::from_bytes(data.as_slice())?;
-                let converted = convert_vscode_to_zed(theme);
-                converted.write()?;
+                if let Ok(extension) = VsCodeExtension::read(fname.as_str()) {
+                    let converted = ZedExtension::from(&*extension);
+                    converted.write()?;
+                } else {
+                    // this is wrong
+                    let data = read_file(&fname)?;
+                    let theme = VsCodeTheme::from_bytes(data.as_slice())?;
+                    let converted = convert_vscode_to_zed(theme);
+                    converted.write()?;
+                }
             } else {
                 let bytes = read_stdin()?;
                 let theme = VsCodeTheme::from_bytes(bytes.as_slice())?;
@@ -139,7 +144,8 @@ fn read_stdin() -> Result<Vec<u8>, ThemeError> {
     Ok(data)
 }
 
-fn read_file(fname: &PathBuf) -> Result<Vec<u8>, ThemeError> {
+fn read_file(name: &String) -> Result<Vec<u8>, ThemeError> {
+    let fname: PathBuf = name.into();
     let mut data: Vec<u8> = Vec::new();
     log::debug!("Reading from file '{}'...", fname.display());
     let mut fp = std::fs::File::open(fname)?;

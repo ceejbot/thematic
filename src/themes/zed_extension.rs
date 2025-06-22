@@ -61,10 +61,6 @@ impl Extension for ZedExtension {
         self.name.as_str()
     }
 
-    fn directory(&self) -> &str {
-        self.directory.as_str()
-    }
-
     fn extensions_path() -> String {
         let twiddle = home::home_dir().unwrap_or_default();
         format!("{}/{}", twiddle.display(), EXTENSION_DIR)

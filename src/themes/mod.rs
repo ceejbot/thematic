@@ -19,8 +19,6 @@ pub trait Extension {
     fn read(name: &str) -> Result<Box<Self>, ThemeError>;
     /// Write out a minimum viable theme extension for this editor.
     fn write(&self) -> Result<(), ThemeError>;
-    /// The directory this theme belongs in.
-    fn directory(&self) -> &str;
     /// The official extensions path for this editor.
     fn extensions_path() -> String;
     /// The human name of this extension (as opposed to theme).
