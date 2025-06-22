@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::skip_serializing_none;
 
 use crate::ThemeError;
@@ -24,8 +24,53 @@ pub struct VSCodeTheme {
     pub token_colors: Option<TokenColors>,
     #[serde(rename = "semanticHighlighting")]
     pub semantic_highlighting: Option<bool>,
-    #[serde(rename = "semanticTokenColors")]
+    #[serde(
+        rename = "semanticTokenColors",
+        deserialize_with = "deserialize_semantic_token_colors",
+        default
+    )]
     pub semantic_token_colors: Option<HashMap<String, TokenColorSettings>>,
+}
+
+/// Custom deserializer for semanticTokenColors that handles both old and new formats
+fn deserialize_semantic_token_colors<'de, D>(
+    deserializer: D,
+) -> Result<Option<HashMap<String, TokenColorSettings>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde_json::Value;
+
+    let value: Option<Value> = Option::deserialize(deserializer)?;
+    let Some(value) = value else {
+        return Ok(None);
+    };
+
+    // Try to deserialize as new format first (HashMap<String, TokenColorSettings>)
+    if let Ok(new_format) = HashMap::<String, TokenColorSettings>::deserialize(value.clone()) {
+        return Ok(Some(new_format));
+    }
+
+    // Try to deserialize as old format (HashMap<String, String>)
+    if let Ok(old_format) = HashMap::<String, String>::deserialize(value) {
+        let converted = old_format
+            .into_iter()
+            .map(|(key, color)| {
+                (
+                    key,
+                    TokenColorSettings {
+                        foreground: Some(color),
+                        background: None,
+                        font_style: None,
+                    },
+                )
+            })
+            .collect();
+        return Ok(Some(converted));
+    }
+
+    // If both fail, return None (ignore the field)
+    Ok(None)
 }
 
 impl VSCodeTheme {
@@ -39,8 +84,8 @@ impl VSCodeTheme {
     /// Load a VSCode theme from a file
     pub fn load<P: AsRef<Path>>(path: P) -> Result<VSCodeTheme, ThemeError> {
         let content = fs::read_to_string(path)?;
-        let theme_family: VSCodeTheme = serde_json::from_str(&content)?;
-        Ok(theme_family)
+        let theme: VSCodeTheme = serde_json::from_str(&content)?;
+        Ok(theme)
     }
 }
 
@@ -380,7 +425,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn load_vscode_fixture() {
+    fn modern_theme_format() {
         let result = VSCodeTheme::load("fixtures/vscode/rose-pine-moon.json");
         assert!(result.is_ok());
         let theme = result.unwrap();
@@ -392,6 +437,20 @@ mod tests {
         // Test that we can access some colors
         assert!(theme.get_color("editor.background").is_some());
         assert!(theme.get_color("editor.foreground").is_some());
+    }
+
+    #[test]
+    fn older_theme_format() {
+        let theme = VSCodeTheme::load("fixtures/vscode/catppuccin-latte.json").expect("catppuccin-latte can be loaded");
+        assert_eq!(theme.name, "Catppuccin Latte");
+        assert_eq!(theme.get_theme_type(), Some("light"));
+        let theme = VSCodeTheme::load("fixtures/vscode/catppuccin-mocha.json").expect("catppuccin-latte can be loaded");
+        assert_eq!(theme.name, "Catppuccin Mocha");
+        assert_eq!(theme.get_theme_type(), Some("dark"));
+        let theme = VSCodeTheme::load("fixtures/vscode/bluloco-light-color-theme.json")
+            .expect("bluloco-light-color-theme can be loaded");
+        assert_eq!(theme.name, "Bluloco Light");
+        assert_eq!(theme.get_theme_type(), Some("light"));
     }
 
     #[test]

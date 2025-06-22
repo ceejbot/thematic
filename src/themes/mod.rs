@@ -1,12 +1,41 @@
+pub mod vsc_extension;
 pub mod vscode;
 pub mod zed;
+pub mod zed_extension;
 
 use std::path::{Path, PathBuf};
 
-pub use vscode::VSCodeTheme;
-pub use zed::{ZedTheme, ZedThemeFamily};
+pub use vsc_extension::*;
+pub use vscode::*;
+pub use zed::*;
+pub use zed_extension::*;
 
 use crate::ThemeError;
+
+pub trait Extension {
+    type ThemeType;
+
+    /// Attempt to find and read the theme from its name.
+    fn read(name: &str) -> Result<Box<Self>, ThemeError>;
+    /// Write out a minimum viable theme extension for this editor.
+    fn write(&self) -> Result<(), ThemeError>;
+    /// The directory this theme belongs in.
+    fn directory(&self) -> &str;
+    /// The official extensions path for this editor.
+    fn extensions_path() -> String;
+    /// The human name of this extension (as opposed to theme).
+    fn name(&self) -> &str;
+    /// Get all themes associated with this extension.
+    fn themes(&self) -> &[Self::ThemeType];
+    /// Construct the path this editor type expects to find this extension in, from the name only.
+    fn official_path_for(name: &str, extdir: &str) -> String;
+}
+
+pub trait ThemeTr {
+    type T;
+
+    fn load<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError>;
+}
 
 #[derive(Debug, Clone)]
 pub enum Theme {

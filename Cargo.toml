@@ -1,27 +1,30 @@
 [package]
-name = "zed-theme"
-description = "Convert VSCode themes to Zed format"
+name = "thematic"
+description = "Convert themes between VSCode and Zed formats"
 version = "0.1.0"
 edition = "2024"
 authors = ["C J Silverio <ceejceej@gmail.com>"]
 license = "Parity-7.0.0"
 readme = "README.md"
-repository = "https://github.com/ceejbot/zed-theme"
-homepage = "https://github.com/ceejbot/zed-theme"
+repository = "https://github.com/ceejbot/thematic"
+homepage = "https://github.com/ceejbot/thematic"
 
 [lib]
 name = "thematic"
 path = "src/lib.rs"
 
 [[bin]]
-name = "zed-theme"
+name = "thematic"
 path = "src/main.rs"
 
 [dependencies]
+clap = { version = "4.4.0", features = ["derive"] }
+glob = "0.3.2"
+home = "0.5.11"
+log = "0.4.27"
+lovely_env_logger = "0.6.2"
+mkdirp = "1.0.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_with = "3.8.1"
-clap = { version = "4.4.0", features = ["derive"] }
-log = "0.4.27"
-lovely_env_logger = "0.6.2"
 thiserror = "2.0.12"

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Build/Lint/Test Commands
+## Build/Lint/Test Commands bash commands
 
 - Build: `cargo build`
 - Check: `cargo check`

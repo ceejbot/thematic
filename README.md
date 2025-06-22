@@ -11,6 +11,10 @@ The schema for VSCode themes:
 		- [workbench-colors schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/workbench-colors.json)
 		- [textmate-colors schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/textmate-colors.json)
 
+## Developing
+
+Well, there's a file for telling Claude how to work. It also tells humans how to develop. tl;dr Rust. Conveniences in the justfile.
+
 ## LICENSE
 
 This code is licensed via [the Parity Public License.](https://paritylicense.com) This license requires people who build on top of this source code to share their work with the commun    ity, too. See the license text for details.
