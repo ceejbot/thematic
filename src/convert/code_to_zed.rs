@@ -5,10 +5,10 @@ use std::collections::HashMap;
 
 use crate::themes::vscode::{TokenColorRule, TokenColors, TokenScope};
 use crate::themes::zed::{Appearance, FontStyle, HighlightStyle, PlayerColor, ZedThemeStyle};
-use crate::{VSCodeTheme, ZedTheme};
+use crate::{VsCodeTheme, ZedTheme};
 
-impl From<&VSCodeTheme> for ZedTheme {
-    fn from(value: &VSCodeTheme) -> Self {
+impl From<&VsCodeTheme> for ZedTheme {
+    fn from(value: &VsCodeTheme) -> Self {
         let appearance = if value.is_dark_theme() {
             Appearance::Dark
         } else {
@@ -193,7 +193,7 @@ fn set_zed_defaults(zed_style: &mut ZedThemeStyle) {
 }
 
 /// Maps VSCode token colors to Zed syntax highlighting
-fn map_syntax_highlighting(vscode_theme: &VSCodeTheme) -> HashMap<String, HighlightStyle> {
+fn map_syntax_highlighting(vscode_theme: &VsCodeTheme) -> HashMap<String, HighlightStyle> {
     let mut syntax_map = HashMap::new();
 
     if let Some(TokenColors::Rules(rules)) = &vscode_theme.token_colors {
@@ -351,11 +351,12 @@ fn create_default_players(style: &ZedThemeStyle) -> Vec<PlayerColor> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::themes::ThemeFile;
 
     #[test]
     fn vscode_to_zed_conversion() {
         let vscode_theme =
-            VSCodeTheme::load("fixtures/vscode/rose-pine-moon.json").expect("Failed to load VSCode theme");
+            VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json").expect("Failed to load VSCode theme");
 
         let thematic: ZedTheme = (&vscode_theme).into();
 

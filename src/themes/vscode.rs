@@ -11,11 +11,12 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::skip_serializing_none;
 
 use crate::ThemeError;
+use crate::themes::ThemeFile;
 
 /// A complete VSCode color theme
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VSCodeTheme {
+pub struct VsCodeTheme {
     pub name: String,
     #[serde(rename = "type")]
     pub theme_type: Option<String>,
@@ -73,19 +74,24 @@ where
     Ok(None)
 }
 
-impl VSCodeTheme {
-    /// Save a VSCode theme to a JSON file
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+impl ThemeFile for VsCodeTheme {
+    // cheat! cheat!
+    type T = VsCodeTheme;
+
+    fn read<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError> {
+        let content = fs::read_to_string(path)?;
+        let theme: VsCodeTheme = serde_json::from_str(&content)?;
+        Ok(theme)
+    }
+
+    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let content = serde_json::to_string_pretty(self)?;
         fs::write(path, content)?;
         Ok(())
     }
 
-    /// Load a VSCode theme from a file
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<VSCodeTheme, ThemeError> {
-        let content = fs::read_to_string(path)?;
-        let theme: VSCodeTheme = serde_json::from_str(&content)?;
-        Ok(theme)
+    fn from_bytes(bytes: &[u8]) -> Result<Self::T, ThemeError> {
+        Ok(serde_json::from_slice::<VsCodeTheme>(bytes)?)
     }
 }
 
@@ -126,7 +132,7 @@ pub struct TokenColorSettings {
     pub font_style: Option<String>,
 }
 
-impl VSCodeTheme {
+impl VsCodeTheme {
     /// Create a new VSCode theme with the given name
     pub fn new(name: String) -> Self {
         Self {
@@ -426,7 +432,7 @@ mod tests {
 
     #[test]
     fn modern_theme_format() {
-        let result = VSCodeTheme::load("fixtures/vscode/rose-pine-moon.json");
+        let result = VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json");
         assert!(result.is_ok());
         let theme = result.unwrap();
         assert_eq!(theme.name, "Rosé Pine Moon");
@@ -441,13 +447,13 @@ mod tests {
 
     #[test]
     fn older_theme_format() {
-        let theme = VSCodeTheme::load("fixtures/vscode/catppuccin-latte.json").expect("catppuccin-latte can be loaded");
+        let theme = VsCodeTheme::read("fixtures/vscode/catppuccin-latte.json").expect("catppuccin-latte can be loaded");
         assert_eq!(theme.name, "Catppuccin Latte");
         assert_eq!(theme.get_theme_type(), Some("light"));
-        let theme = VSCodeTheme::load("fixtures/vscode/catppuccin-mocha.json").expect("catppuccin-latte can be loaded");
+        let theme = VsCodeTheme::read("fixtures/vscode/catppuccin-mocha.json").expect("catppuccin-latte can be loaded");
         assert_eq!(theme.name, "Catppuccin Mocha");
         assert_eq!(theme.get_theme_type(), Some("dark"));
-        let theme = VSCodeTheme::load("fixtures/vscode/bluloco-light-color-theme.json")
+        let theme = VsCodeTheme::read("fixtures/vscode/bluloco-light-color-theme.json")
             .expect("bluloco-light-color-theme can be loaded");
         assert_eq!(theme.name, "Bluloco Light");
         assert_eq!(theme.get_theme_type(), Some("light"));
@@ -457,13 +463,13 @@ mod tests {
     fn vscode_theme_round_trip() {
         // Load a VSCode theme
         let original_theme =
-            VSCodeTheme::load("fixtures/vscode/rose-pine-moon.json").expect("Failed to load VSCode theme");
+            VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json").expect("Failed to load VSCode theme");
 
         // Serialize it back to JSON
         let serialized = serde_json::to_string_pretty(&original_theme).expect("Failed to serialize VSCode theme");
 
         // Deserialize it again
-        let round_trip_theme: VSCodeTheme =
+        let round_trip_theme: VsCodeTheme =
             serde_json::from_str(&serialized).expect("Failed to deserialize VSCode theme");
 
         // Check that key properties are preserved

@@ -31,36 +31,12 @@ pub trait Extension {
     fn official_path_for(name: &str, extdir: &str) -> String;
 }
 
-pub trait ThemeTr {
+pub trait ThemeFile {
     type T;
 
-    fn load<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError>;
-}
-
-#[derive(Debug, Clone)]
-pub enum Theme {
-    VSCode(VSCodeTheme),
-    Zed(ZedThemeFamily),
-    // Unknown,
-}
-
-impl Theme {
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, ThemeError> {
-        let mut pathbuf = PathBuf::new();
-        pathbuf.push(&path);
-        pathbuf = ensure_json_extension(pathbuf);
-        if !pathbuf.exists() {
-            return Err(ThemeError::FileDoesNotExist(pathbuf.display().to_string()));
-        }
-
-        if let Ok(theme) = ZedThemeFamily::load(&pathbuf) {
-            return Ok(Theme::Zed(theme));
-        }
-        if let Ok(theme) = VSCodeTheme::load(&pathbuf) {
-            return Ok(Theme::VSCode(theme));
-        }
-        Err(ThemeError::UnknownThemeType)
-    }
+    fn read<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError>;
+    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError>;
+    fn from_bytes(bytes: &[u8]) -> Result<Self::T, ThemeError>;
 }
 
 /// Ensure the path has a .json extension, adding it if not present
@@ -96,17 +72,6 @@ fn ensure_json_extension<P: AsRef<Path>>(input: P) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn load_generic() {
-        let something = Theme::load("fixtures/vscode/catppuccin-latte.json").expect("we should recognize this one");
-        match something {
-            Theme::VSCode(theme) => {
-                assert_eq!(theme.name.as_str(), "Catppuccin Latte");
-            }
-            Theme::Zed(_) => unreachable!(),
-        }
-    }
 
     #[test]
     fn test_ensure_json_extension_already_has_json() {

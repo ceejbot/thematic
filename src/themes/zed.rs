@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
 use crate::ThemeError;
+use crate::themes::ThemeFile;
 
 /// A complete Zed theme family containing metadata and one or more themes
 #[skip_serializing_none]
@@ -23,19 +24,24 @@ pub struct ZedThemeFamily {
     pub themes: Vec<ZedTheme>,
 }
 
-impl ZedThemeFamily {
-    /// Save a Zed theme family to a json file at the given location.
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+impl ThemeFile for ZedThemeFamily {
+    // cheat! cheat!
+    type T = ZedThemeFamily;
+
+    fn read<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError> {
+        let content = fs::read_to_string(path)?;
+        let theme: ZedThemeFamily = serde_json::from_str(&content)?;
+        Ok(theme)
+    }
+
+    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let content = serde_json::to_string_pretty(self)?;
         fs::write(path, content)?;
         Ok(())
     }
 
-    /// Try loading a Zed theme from a file path.
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<ZedThemeFamily, ThemeError> {
-        let content = fs::read_to_string(path)?;
-        let theme_family: ZedThemeFamily = serde_json::from_str(&content)?;
-        Ok(theme_family)
+    fn from_bytes(bytes: &[u8]) -> Result<Self::T, ThemeError> {
+        Ok(serde_json::from_slice::<ZedThemeFamily>(bytes)?)
     }
 }
 
@@ -424,7 +430,7 @@ mod tests {
 
     #[test]
     fn load_zed_fixture() {
-        let result = ZedThemeFamily::load("fixtures/zed/catppuccin-latte.json");
+        let result = ZedThemeFamily::read("fixtures/zed/catppuccin-latte.json");
         assert!(result.is_ok());
         let theme_family = result.unwrap();
         assert_eq!(theme_family.name, "Catppuccin");
@@ -440,7 +446,7 @@ mod tests {
     fn test_zed_theme_round_trip() {
         // Load a Zed theme
         let original_theme =
-            ZedThemeFamily::load("fixtures/zed/catppuccin-latte.json").expect("Failed to load Zed theme");
+            ZedThemeFamily::read("fixtures/zed/catppuccin-latte.json").expect("Failed to load Zed theme");
 
         // Serialize it back to JSON
         let serialized = serde_json::to_string_pretty(&original_theme).expect("Failed to serialize Zed theme");

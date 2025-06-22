@@ -2,22 +2,22 @@ use std::collections::HashMap;
 
 use crate::themes::vscode::{TokenColorRule, TokenColorSettings, TokenColors, TokenScope};
 use crate::themes::zed::{Appearance, FontStyle, ZedThemeStyle};
-use crate::{VSCodeTheme, ZedTheme, ZedThemeFamily};
+use crate::{VsCodeTheme, ZedTheme, ZedThemeFamily};
 
-impl From<&ZedThemeFamily> for Vec<VSCodeTheme> {
+impl From<&ZedThemeFamily> for Vec<VsCodeTheme> {
     fn from(value: &ZedThemeFamily) -> Self {
         value.themes.iter().map(|xs| xs.into()).collect()
     }
 }
 
-impl From<&ZedTheme> for VSCodeTheme {
+impl From<&ZedTheme> for VsCodeTheme {
     fn from(value: &ZedTheme) -> Self {
         let theme_type = match value.appearance {
             Appearance::Dark => "dark",
             Appearance::Light => "light",
         };
 
-        let mut theme = VSCodeTheme::new(value.name.clone());
+        let mut theme = VsCodeTheme::new(value.name.clone());
         theme.theme_type = Some(theme_type.to_string());
 
         // Map UI colors from Zed to VSCode
@@ -222,13 +222,14 @@ fn map_zed_key_to_textmate_scopes(zed_key: &str) -> Option<Vec<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::themes::ThemeFile;
 
     #[test]
     fn zed_to_vscode_conversion() {
-        let zed_family = ZedThemeFamily::load("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed theme");
+        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed theme");
 
         let thematic = &zed_family.themes[0];
-        let vscode_theme: VSCodeTheme = thematic.into();
+        let vscode_theme: VsCodeTheme = thematic.into();
 
         assert_eq!(vscode_theme.name, "Rosé Pine Moon");
         assert_eq!(vscode_theme.theme_type, Some("dark".to_string()));
@@ -238,9 +239,9 @@ mod tests {
 
     #[test]
     fn zed_family_to_vscode_themes() {
-        let zed_family = ZedThemeFamily::load("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed theme");
+        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed theme");
 
-        let vscode_themes: Vec<VSCodeTheme> = (&zed_family).into();
+        let vscode_themes: Vec<VsCodeTheme> = (&zed_family).into();
 
         assert_eq!(vscode_themes.len(), zed_family.themes.len());
         assert_eq!(vscode_themes[0].name, zed_family.themes[0].name);

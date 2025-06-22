@@ -89,4 +89,4 @@ pub mod themes;
 
 pub use convert::*;
 pub use errors::ThemeError;
-pub use themes::{Theme, VSCodeTheme, ZedTheme, ZedThemeFamily};
+pub use themes::{VsCodeTheme, ZedTheme, ZedThemeFamily};

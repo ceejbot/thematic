@@ -18,7 +18,7 @@ name = "thematic"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.4.0", features = ["derive"] }
+clap = { version = "4.4.0", features = ["derive", "wrap_help"] }
 glob = "0.3.2"
 home = "0.5.11"
 log = "0.4.27"
@@ -27,4 +27,5 @@ mkdirp = "1.0.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_with = "3.8.1"
+slug = "0.1.6"
 thiserror = "2.0.12"
