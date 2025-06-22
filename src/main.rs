@@ -92,7 +92,7 @@ fn main() -> Result<(), ThemeError> {
         Convert::VscodeToZed { input } => {
             if let Some(fname) = input {
                 if let Ok(extension) = VsCodeExtension::read(fname.as_str()) {
-                    let converted = ZedExtension::from(&*extension);
+                    let converted = ZedExtension::from(*extension);
                     converted.write()?;
                 } else {
                     // this is wrong
@@ -110,12 +110,7 @@ fn main() -> Result<(), ThemeError> {
         }
         Convert::ZedToVscode { input } => {
             if let Some(fname) = input {
-                // todo see if directory is an extension
-                let data = read_file(&fname)?;
-                let theme = ZedThemeFamily::from_bytes(data.as_slice())?;
-                // print a lot only in this case
-                let converted = convert_zed_to_vscode(theme);
-                converted.write()?;
+                handle_zed_extension(fname)?;
             } else {
                 let bytes = read_stdin()?;
                 let family = ZedThemeFamily::from_bytes(bytes.as_slice())?;
@@ -179,14 +174,20 @@ fn convert_vscode_to_zed(vscode_theme: VsCodeTheme) -> ZedExtension {
     ZedExtension::from(&vscode_theme)
 }
 
-fn convert_zed_to_vscode(zed_theme_family: ZedThemeFamily) -> VsCodeExtension {
-    log::info!("✓ Loaded Zed theme family: {}", zed_theme_family.name);
-    log::debug!("Theme details:");
-    log::debug!("  - Family name: {}", zed_theme_family.name);
-    log::debug!("  - Author: {}", zed_theme_family.author);
-    log::debug!("  - Themes in family: {}", zed_theme_family.themes.len());
+fn handle_zed_extension(fname: String) -> Result<(), ThemeError> {
+    let zed = *(ZedExtension::read(fname.as_str())?);
 
-    VsCodeExtension::from(&zed_theme_family)
+    // print a lot only in this case
+    log::info!("✓ Loaded Zed theme extension: {fname}");
+    log::debug!("Theme details:");
+    log::debug!("  - Name: {}", zed.metadata().name());
+    log::debug!("  - Authors: {:#?}", zed.metadata().authors());
+    log::debug!("  - Themes in extension: {}", zed.metadata().themes().len());
+
+    let converted = VsCodeExtension::from(zed);
+    converted.write()?;
+
+    Ok(())
 }
 
 #[cfg(test)]

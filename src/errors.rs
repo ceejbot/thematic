@@ -16,4 +16,10 @@ pub enum ThemeError {
     FileDoesNotExist(String),
     #[error("Theme not found: {0}")]
     ThemeNotFound(String),
+    #[error("No theme files found: {0}")]
+    NoThemesFound(String),
+    #[error("Toml serialization: {0}")]
+    TomlSerError(#[from] toml::ser::Error),
+    #[error("Toml deserialization: {0}")]
+    TomlDeserError(#[from] toml::de::Error),
 }

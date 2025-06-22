@@ -87,6 +87,9 @@ pub mod convert;
 pub mod editors;
 pub mod errors;
 
+#[cfg(test)]
+mod conversion_tests;
+
 pub use convert::*;
 pub use editors::*;
 pub use errors::ThemeError;

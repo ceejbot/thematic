@@ -54,7 +54,7 @@ pub struct ZedTheme {
 }
 
 /// Theme appearance - light or dark
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Appearance {
     Light,

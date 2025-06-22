@@ -2,7 +2,9 @@
 //! We don't try to be complete shiny publishable extensions, but just enough
 //! that the editor can load and use the theme.
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 use glob::glob;
 use serde::{Deserialize, Serialize};
@@ -12,37 +14,110 @@ use crate::{ThemeError, VsCodeTheme, ZedThemeFamily};
 
 static EXTENSION_DIR: &str = ".vscode/extensions";
 
+static OFFICIAL_DIR: LazyLock<String> = LazyLock::new(|| {
+    let twiddle = home::home_dir().unwrap_or_default();
+    format!("{}/{}", twiddle.display(), EXTENSION_DIR)
+});
+
 #[derive(Debug, Clone)]
 pub struct VsCodeExtension {
-    directory: PathBuf,
+    pub(crate) directory: PathBuf,
     name: String,
     themes: Vec<VsCodeTheme>,
-    metadata: Option<VsCodePackageJson>,
+    metadata: VsCodePackageJson,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VsCodePackageJson {
     name: String,
+    #[serde(rename = "displayName")]
     display_name: String,
     description: String,
     publisher: String,
-    contributes: Vec<ThemePointer>,
+    contributes: Contributions,
+    repository: Repository,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Repository {
+    url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Contributions {
+    // icon_themes: Vec<IconThemePointer>,
+    themes: Vec<ThemePointer>,
+}
+
+impl VsCodePackageJson {
+    pub fn new(name: &str, display_name: &str, description: &str, publisher: &str, themes: Vec<String>) -> Self {
+        let regular_themes = themes.iter().map(|_xs| todo!()).collect();
+        let contributes = Contributions {
+            themes: regular_themes,
+            // icon_themes: Vec::new(),
+        };
+        Self {
+            name: name.to_owned(),
+            display_name: display_name.to_owned(),
+            description: description.to_owned(),
+            publisher: publisher.to_owned(),
+            contributes,
+            repository: Repository { url: String::default() },
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+    pub fn display_name(&self) -> &str {
+        self.display_name.as_str()
+    }
+    pub fn description(&self) -> &str {
+        self.description.as_str()
+    }
+    pub fn publisher(&self) -> &str {
+        self.publisher.as_str()
+    }
+    pub fn repository(&self) -> &str {
+        self.repository.url.as_str()
+    }
+    pub fn themes(&self) -> &[ThemePointer] {
+        self.contributes.themes.as_slice()
+    }
+    /* pub fn icon_themes(&self) -> &[IconThemePointer] {
+        self.contributes.icon_themes.as_slice()
+    } */
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ThemePointer {
+    /// The slug name for this theme variation.
     label: String,
-    filename: PathBuf,
+    /// regular or dark flavored
+    ui_theme: String,
+    /// The relative path to the file where the theme data is. Eg., ./themes/label.json
+    path: String,
+}
+
+/// Unused at the moment, but at some point we'll start converting icon themes.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IconThemePointer {
+    id: String,
+    label: String,
+    path: String,
 }
 
 impl VsCodeExtension {
+    // start cleanup here
+
     pub fn find_from_name(name: &str, extdir: &str) -> Result<Box<VsCodeExtension>, ThemeError> {
-        // use globs to find a file named `name-color-theme.json` somewhere in this as a subdir
+        // use globs to find a file named `name(-color-theme)?.json` somewhere in this as a subdir
         let barename = name.replace(".json", "");
-        let globby = format!("{}/**/{}*.json", extdir, name.replace(".json", ""));
-        eprintln!("{globby}");
+        let globby = format!("{}/**/themes/{}*.json", extdir, name.replace(".json", ""));
+        // ("{globby}");
 
         let mut matches = glob(globby.as_str())?;
         let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) else {
@@ -52,19 +127,29 @@ impl VsCodeExtension {
     }
 
     pub fn read_from_path(extpath: PathBuf, barename: String) -> Result<Box<VsCodeExtension>, ThemeError> {
+        if extpath.ends_with("package.json") {
+            let contents = std::fs::read_to_string(&extpath)?;
+            let metadata: VsCodePackageJson = serde_json::from_str(contents.as_str())?;
+            return VsCodeExtension::from_metadata(extpath, metadata);
+        }
+
         if let Some(metadata) = VsCodeExtension::extension_metadata(&extpath) {
             // Cool. We can use the metadata to build our extension
             return VsCodeExtension::from_metadata(extpath, metadata);
         }
 
+        log::debug!("Falling back to reading loose color theme json files.");
         // read all .json files in this directory and build a list of the ones that are valid themes
-        let themes = if let Some(parent) = Path::new(&extpath).parent() {
+        let mut themes = if let Some(parent) = Path::new(&extpath).parent() {
             std::fs::read_dir(parent)?
                 .filter_map(|xs| {
                     if let Ok(e) = xs {
                         let fpath = e.path();
                         let pathstring = fpath.to_string_lossy();
-                        if pathstring.ends_with(".json") && pathstring.contains(barename.as_str()) {
+                        if pathstring.ends_with(".json")
+                            && pathstring.contains(barename.as_str())
+                            && !pathstring.contains("icon-theme")
+                        {
                             Some(e.path())
                         } else {
                             None
@@ -78,65 +163,134 @@ impl VsCodeExtension {
         } else {
             Vec::new()
         };
+
+        if themes.is_empty() {
+            // We found no themes. There is no point.
+            return Err(ThemeError::NoThemesFound(extpath.to_string_lossy().to_string()));
+        }
+        themes.sort_by(|left, right| left.name.cmp(&right.name));
+
+        let mut theme_pointers: Vec<ThemePointer> = themes
+            .iter()
+            .map(|xs| {
+                let ui_theme = if xs.is_dark_theme() { "vs-dark" } else { "vs" };
+                ThemePointer {
+                    label: slug::slugify(&xs.name),
+                    ui_theme: ui_theme.to_string(),
+                    path: format!("./themes/{}", xs.filename),
+                }
+            })
+            .collect();
+        theme_pointers.sort_by(|left, right| left.label.cmp(&right.label));
+        let contributes = Contributions {
+            themes: theme_pointers,
+            // icon_themes: Vec::new(),
+        };
+
+        let metadata = VsCodePackageJson {
+            name: barename.to_owned(),
+            display_name: themes[0].name.clone(), // we know this exists
+            description: "Constructed from a directory full of theme files.".to_string(),
+            publisher: "none".to_string(),
+            contributes,
+            repository: Repository { url: "".to_string() },
+        };
+
         let extension = VsCodeExtension {
             name: barename.to_owned(),
             directory: extpath,
             themes,
-            metadata: None,
+            metadata,
         };
 
         Ok(Box::new(extension))
     }
 
     pub fn from_metadata(found: PathBuf, metadata: VsCodePackageJson) -> Result<Box<VsCodeExtension>, ThemeError> {
-        let themes = metadata
+        let mut extpath = found.clone();
+        if !extpath.is_dir() {
+            extpath.pop();
+        }
+        if extpath.ends_with("themes") {
+            extpath.pop();
+        }
+
+        let themes: Vec<_> = metadata
             .contributes
+            .themes
             .iter()
-            .filter_map(|xs| VsCodeTheme::read(&xs.filename).ok())
+            .filter_map(|xs| {
+                let mut themepath = extpath.clone();
+                themepath.push(&xs.path);
+                VsCodeTheme::read(&themepath).ok()
+            })
             .collect();
 
         let extension = VsCodeExtension {
             name: metadata.display_name.clone(),
             directory: found,
             themes,
-            metadata: Some(metadata),
+            metadata,
         };
+
         Ok(Box::new(extension))
     }
 
     /// Ensure the name of a theme file stored in an extension is in the form
-    /// vscode expects "name-color-theme.json".
+    /// vscode expects "name.json".
     pub fn normalize_filename(name: &str) -> String {
         let extname = name.replace(".json", "").replace("-color-theme", "");
-        format!("{extname}-color-theme.json")
+        format!("{extname}.json")
     }
 
     pub fn new(theme_name: &str, filename: &str, themes: Vec<VsCodeTheme>) -> Self {
-        let dir = VsCodeExtension::official_path_for(filename, EXTENSION_DIR);
+        let dir = VsCodeExtension::build_official_path(filename, EXTENSION_DIR);
         let mut directory = PathBuf::new();
         directory.push(dir);
         let name = theme_name.to_owned();
+
+        let theme_pointers = themes
+            .iter()
+            .map(|t| {
+                let ui_theme = if t.is_dark_theme() { "vs-dark" } else { "vs" };
+                ThemePointer {
+                    label: t.filename.replace(".json", ""),
+                    ui_theme: ui_theme.to_string(),
+                    path: t.filename.clone(),
+                }
+            })
+            .collect();
+        let contributes = Contributions {
+            themes: theme_pointers,
+            // icon_themes: Vec::new(),
+        };
+
+        let metadata = VsCodePackageJson {
+            name: slug::slugify(&name),
+            display_name: name.clone(),
+            description: "constructed extension".to_string(),
+            publisher: "".to_string(),
+            contributes,
+            repository: Repository { url: "".to_string() },
+        };
+
         Self {
             directory,
             name,
             themes,
-            metadata: None, // TODO might need to fake this up
+            metadata,
         }
     }
 
     /// Input is a path to a theme file; we decide if it's part of an extension
-    pub fn extension_metadata(fpath: &PathBuf) -> Option<VsCodePackageJson> {
+    pub fn extension_metadata(fpath: &Path) -> Option<VsCodePackageJson> {
         // parent dir must exist and be named "themes"
-        let Some(parent) = fpath.parent() else {
-            return None;
-        };
+        let parent = fpath.parent()?;
         if !parent.is_dir() || !parent.ends_with("themes") {
             return None;
         }
         // hop up one more.
-        let Some(extdir) = parent.parent() else {
-            return None;
-        };
+        let extdir = parent.parent()?;
         // this one must have a package.json file
         let mut pkg_path = PathBuf::from(extdir);
         pkg_path.push("package.json");
@@ -149,10 +303,10 @@ impl VsCodeExtension {
 
 impl Extension for VsCodeExtension {
     type ThemeType = VsCodeTheme;
+    type Metadata = VsCodePackageJson;
 
     fn extensions_path() -> String {
-        let twiddle = home::home_dir().unwrap_or_default();
-        format!("{}/{}", twiddle.display(), EXTENSION_DIR)
+        OFFICIAL_DIR.clone()
     }
 
     fn read(name: &str) -> Result<Box<VsCodeExtension>, ThemeError> {
@@ -160,50 +314,118 @@ impl Extension for VsCodeExtension {
     }
 
     fn write(&self) -> Result<(), ThemeError> {
-        let mut themedir = PathBuf::from(&self.directory);
-        themedir.push("themes");
-        mkdirp::mkdirp(&themedir)?;
-        for theme in self.themes() {
-            let mut filename = themedir.clone();
-            filename.push(theme.name.as_str());
+        let mut workdir = PathBuf::from(&self.directory);
+        workdir.push("themes");
+        std::fs::create_dir_all(&workdir)?;
+
+        for theme in self.themes.as_slice() {
+            let slugged = slug::slugify(&theme.name);
+            let themefile = format!("{slugged}.json");
+            let mut filename = workdir.clone();
+            filename.push(themefile);
             theme.write(filename)?;
         }
-        // write anything else required for the MVP extension, e.g., metadata
+
+        workdir.pop();
+        let package_bytes = serde_json::to_vec_pretty(self.metadata())?;
+        workdir.push("package.json");
+        let mut fp = std::fs::File::create(&workdir)?;
+        fp.write_all(package_bytes.as_slice())?;
+        log::info!("Wrote VSCode extension '{}' to {}", self.name, self.directory.display());
         Ok(())
+    }
+
+    fn build_official_path(name: &str, extdir: &str) -> String {
+        let extname = VsCodeExtension::normalize_filename(name);
+        let subdir = extname.replace("-color-theme.json", "");
+        format!("{extdir}/{subdir}/{extname}")
     }
 
     fn name(&self) -> &str {
         self.name.as_str()
     }
 
-    fn official_path_for(name: &str, extdir: &str) -> String {
-        let extname = VsCodeExtension::normalize_filename(name);
-        let subdir = extname.replace("-color-theme.json", "");
-        format!("{extdir}/{subdir}/{extname}")
+    fn official_path(&self) -> &PathBuf {
+        &self.directory
     }
 
-    fn themes(&self) -> &[VsCodeTheme] {
-        self.themes.as_slice()
+    fn metadata(&self) -> &VsCodePackageJson {
+        &self.metadata
+    }
+
+    /// Consumes themes; use when converting.
+    fn themes(self) -> Vec<VsCodeTheme> {
+        self.themes
     }
 }
 
-impl From<&ZedExtension> for VsCodeExtension {
-    fn from(input: &ZedExtension) -> Self {
-        let directory = VsCodeExtension::official_path_for(input.name(), VsCodeExtension::extensions_path().as_str());
-        let themes = input.themes().iter().map(VsCodeTheme::from).collect();
+impl From<ZedExtension> for VsCodeExtension {
+    fn from(input: ZedExtension) -> Self {
+        let name = input.name().to_owned();
+        let display_name = input.metadata().name().to_owned();
+        let description = input.metadata().description().to_owned();
+        let publisher = input.metadata().authors().join(", ");
+        let repository = input.metadata().repository().to_owned();
+        let directory =
+            VsCodeExtension::build_official_path(input.metadata().id(), VsCodeExtension::extensions_path().as_str());
+        let families = input.families().to_owned();
+
+        let themes = input.themes();
+        let theme_pointers = themes
+            .iter()
+            .map(|theme| {
+                let ui_theme = match theme.appearance {
+                    crate::Appearance::Light => "vs".to_string(),
+                    crate::Appearance::Dark => "vs-dark".to_string(),
+                };
+
+                let slugged = slug::slugify(&theme.name);
+                let filename = format!("./themes/{slugged}.json");
+                ThemePointer {
+                    label: theme.name.clone(),
+                    ui_theme,
+                    path: filename,
+                }
+            })
+            .collect();
+        let contributes = Contributions {
+            // icon_themes: Vec::new(),
+            themes: theme_pointers,
+        };
+
+        let themes: Vec<VsCodeTheme> = families
+            .iter()
+            .map(|fam| {
+                eprintln!("family has {} themes", fam.themes.len());
+                let themelist: Vec<VsCodeTheme> = fam.into();
+                eprintln!("converted them to {} themes", themelist.len());
+                themelist
+            })
+            .flatten()
+            .collect();
+        eprintln!("---- {} themes", themes.len());
+
+        let metadata = VsCodePackageJson {
+            name: name.clone(),
+            display_name,
+            description,
+            publisher,
+            contributes,
+            repository: Repository { url: repository },
+        };
 
         VsCodeExtension {
             directory: directory.into(),
-            name: input.name().to_owned(),
+            name,
             themes,
-            metadata: None,
+            metadata,
         }
     }
 }
 
-impl From<&ZedThemeFamily> for VsCodeExtension {
-    fn from(family: &ZedThemeFamily) -> Self {
-        let themes: Vec<VsCodeTheme> = family.themes.iter().map(|xs| xs.into()).collect();
+impl From<ZedThemeFamily> for VsCodeExtension {
+    fn from(family: ZedThemeFamily) -> Self {
+        let themes: Vec<VsCodeTheme> = family.themes.into_iter().map(|xs| (&xs).into()).collect();
         // well, if we have a filename, we should use it.
         let theme_filename = slug::slugify(family.name.as_str());
         VsCodeExtension::new(family.name.as_str(), theme_filename.as_str(), themes)
@@ -217,18 +439,12 @@ mod tests {
     #[test]
     fn normalizing_names() {
         assert_eq!(
-            "input-color-theme.json",
+            "input.json",
             VsCodeExtension::normalize_filename("input-color-theme.json")
         );
-        assert_eq!(
-            "input-color-theme.json",
-            VsCodeExtension::normalize_filename("input.json")
-        );
-        assert_eq!(
-            "input-color-theme.json",
-            VsCodeExtension::normalize_filename("input-color-theme")
-        );
-        assert_eq!("input-color-theme.json", VsCodeExtension::normalize_filename("input"));
+        assert_eq!("input.json", VsCodeExtension::normalize_filename("input.json"));
+        assert_eq!("input.json", VsCodeExtension::normalize_filename("input-color-theme"));
+        assert_eq!("input.json", VsCodeExtension::normalize_filename("input"));
     }
 
     #[test]
@@ -236,15 +452,26 @@ mod tests {
         let fixtures = format!("{}/fixtures/vscode", env!("CARGO_MANIFEST_DIR"));
         let found = VsCodeExtension::find_from_name("rose-pine-moon", fixtures.as_str())
             .expect("failed to find Rosé Pine Moon");
-        assert_eq!(found.name, "rose-pine-moon");
-        assert_eq!(found.themes.len(), 2);
+        assert!(found.name.contains("Rosé Pine"));
+        assert_eq!(found.themes.len(), 6);
     }
 
     #[test]
-    fn wont_work_in_ci() {
+    fn reading_by_manifest_path_works() {
+        let vscode_ext = VsCodeExtension::read_from_path(
+            "fixtures/vscode/mvllow.rose-pine-2.14.0/package.json".into(),
+            "unused".to_string(),
+        )
+        .expect("we expect to find the rose pine text fixture");
+        assert!(!vscode_ext.themes.is_empty(), "we should have found some themes");
+        assert_eq!(vscode_ext.themes.len(), 6, "we expected 6 themes");
+    }
+
+    #[test]
+    fn wont_pass_in_ci() {
         let found = VsCodeExtension::find_from_name("bluloco-light", VsCodeExtension::extensions_path().as_str())
             .expect("failed to find Bluloco Light");
-        assert_eq!(found.name, "bluloco-light");
+        assert_eq!(found.name, "Bluloco Light Theme");
         assert_eq!(found.themes.len(), 2);
     }
 }

@@ -31,6 +31,8 @@ pub struct VsCodeTheme {
         default
     )]
     pub semantic_token_colors: Option<HashMap<String, TokenColorSettings>>,
+    #[serde(skip)]
+    pub filename: String,
 }
 
 /// Custom deserializer for semanticTokenColors that handles both old and new formats
@@ -79,8 +81,10 @@ impl ThemeFile for VsCodeTheme {
     type T = VsCodeTheme;
 
     fn read<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError> {
-        let content = fs::read_to_string(path)?;
-        let theme: VsCodeTheme = serde_json::from_str(&content)?;
+        let path_ref = path.as_ref();
+        let content = fs::read_to_string(path_ref)?;
+        let mut theme: VsCodeTheme = serde_json::from_str(&content)?;
+        theme.filename = path_ref.display().to_string();
         Ok(theme)
     }
 
@@ -135,6 +139,7 @@ pub struct TokenColorSettings {
 impl VsCodeTheme {
     /// Create a new VSCode theme with the given name
     pub fn new(name: String) -> Self {
+        let filename = format!("{}.json", slug::slugify(&name));
         Self {
             name,
             theme_type: None,
@@ -142,6 +147,7 @@ impl VsCodeTheme {
             token_colors: None,
             semantic_highlighting: None,
             semantic_token_colors: None,
+            filename,
         }
     }
 
