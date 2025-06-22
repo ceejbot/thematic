@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::themes::vscode::{TokenColorRule, TokenColorSettings, TokenColors, TokenScope};
-use crate::themes::zed::{Appearance, FontStyle, ZedThemeStyle};
+use crate::editors::vscode::{TokenColorRule, TokenColorSettings, TokenColors, TokenScope};
+use crate::editors::zed::{Appearance, FontStyle, ZedThemeStyle};
 use crate::{VsCodeTheme, ZedTheme, ZedThemeFamily};
 
 impl From<&ZedThemeFamily> for Vec<VsCodeTheme> {
@@ -222,11 +222,12 @@ fn map_zed_key_to_textmate_scopes(zed_key: &str) -> Option<Vec<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::themes::ThemeFile;
+    use crate::editors::ThemeFile;
 
     #[test]
     fn zed_to_vscode_conversion() {
-        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed theme");
+        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-theme/themes/rose-pine-moon.json")
+            .expect("Failed to load Zed theme");
 
         let thematic = &zed_family.themes[0];
         let vscode_theme: VsCodeTheme = thematic.into();
@@ -239,7 +240,8 @@ mod tests {
 
     #[test]
     fn zed_family_to_vscode_themes() {
-        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed theme");
+        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-theme/themes/rose-pine-moon.json")
+            .expect("Failed to load Zed theme");
 
         let vscode_themes: Vec<VsCodeTheme> = (&zed_family).into();
 

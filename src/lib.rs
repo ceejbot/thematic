@@ -84,9 +84,9 @@
 //! ```
 
 pub mod convert;
+pub mod editors;
 pub mod errors;
-pub mod themes;
 
 pub use convert::*;
+pub use editors::*;
 pub use errors::ThemeError;
-pub use themes::{VsCodeTheme, ZedTheme, ZedThemeFamily};

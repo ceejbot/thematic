@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap::{Parser, Subcommand};
-use thematic::themes::{Extension, ThemeFile, VsCodeExtension, ZedExtension};
+use thematic::editors::{Extension, ThemeFile, VsCodeExtension, ZedExtension};
 use thematic::*;
 
 /// Convert between VSCode and Zed theme formats

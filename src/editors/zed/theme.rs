@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
 use crate::ThemeError;
-use crate::themes::ThemeFile;
+use crate::editors::ThemeFile;
 
 /// A complete Zed theme family containing metadata and one or more themes
 #[skip_serializing_none]
@@ -430,7 +430,7 @@ mod tests {
 
     #[test]
     fn load_zed_fixture() {
-        let result = ZedThemeFamily::read("fixtures/zed/catppuccin-latte.json");
+        let result = ZedThemeFamily::read("fixtures/zed/catppuccin/themes/catppuccin-mauve.json");
         assert!(result.is_ok());
         let theme_family = result.unwrap();
         assert_eq!(theme_family.name, "Catppuccin");
@@ -445,8 +445,8 @@ mod tests {
     #[test]
     fn test_zed_theme_round_trip() {
         // Load a Zed theme
-        let original_theme =
-            ZedThemeFamily::read("fixtures/zed/catppuccin-latte.json").expect("Failed to load Zed theme");
+        let original_theme = ZedThemeFamily::read("fixtures/zed/catppuccin/themes/catppuccin-mauve.json")
+            .expect("Failed to load Zed theme");
 
         // Serialize it back to JSON
         let serialized = serde_json::to_string_pretty(&original_theme).expect("Failed to serialize Zed theme");

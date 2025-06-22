@@ -11,7 +11,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::skip_serializing_none;
 
 use crate::ThemeError;
-use crate::themes::ThemeFile;
+use crate::editors::ThemeFile;
 
 /// A complete VSCode color theme
 #[skip_serializing_none]
@@ -432,7 +432,8 @@ mod tests {
 
     #[test]
     fn modern_theme_format() {
-        let result = VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json");
+        let result =
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json");
         assert!(result.is_ok());
         let theme = result.unwrap();
         assert_eq!(theme.name, "Rosé Pine Moon");
@@ -447,23 +448,47 @@ mod tests {
 
     #[test]
     fn older_theme_format() {
-        let theme = VsCodeTheme::read("fixtures/vscode/catppuccin-latte.json").expect("catppuccin-latte can be loaded");
-        assert_eq!(theme.name, "Catppuccin Latte");
-        assert_eq!(theme.get_theme_type(), Some("light"));
-        let theme = VsCodeTheme::read("fixtures/vscode/catppuccin-mocha.json").expect("catppuccin-latte can be loaded");
-        assert_eq!(theme.name, "Catppuccin Mocha");
-        assert_eq!(theme.get_theme_type(), Some("dark"));
-        let theme = VsCodeTheme::read("fixtures/vscode/bluloco-light-color-theme.json")
-            .expect("bluloco-light-color-theme can be loaded");
+        let result =
+            VsCodeTheme::read("fixtures/vscode/uloco.theme-bluloco-light-3.7.5/themes/bluloco-light-color-theme.json");
+        assert!(result.is_ok());
+        let theme = result.unwrap();
         assert_eq!(theme.name, "Bluloco Light");
         assert_eq!(theme.get_theme_type(), Some("light"));
+        assert!(!theme.is_dark_theme());
+        assert!(theme.is_light_theme());
+
+        // Test that we can access some colors
+        assert!(theme.get_color("editor.background").is_some());
+        assert!(theme.get_color("editor.foreground").is_some());
+    }
+
+    #[test]
+    fn read_all_fixtures() {
+        let themelist = vec![
+            "fixtures/vscode/catppuccin.catppuccin-vsc-3.17.0/themes/frappe.json",
+            "fixtures/vscode/catppuccin.catppuccin-vsc-3.17.0/themes/latte.json",
+            "fixtures/vscode/catppuccin.catppuccin-vsc-3.17.0/themes/macchiato.json",
+            "fixtures/vscode/catppuccin.catppuccin-vsc-3.17.0/themes/mocha.json",
+            "fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-color-theme.json",
+            "fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-dawn-color-theme.json",
+            "fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json",
+            "fixtures/vscode/uloco.theme-bluloco-light-3.7.5/themes/bluloco-light-color-theme.json",
+            "fixtures/vscode/uloco.theme-bluloco-light-3.7.5/themes/bluloco-light-italic-color-theme.json",
+        ];
+
+        for tpath in themelist {
+            eprintln!("reading {tpath}");
+            let theme = VsCodeTheme::read(tpath).expect("expected to read a fixture successfully");
+            assert!(!theme.name.is_empty());
+        }
     }
 
     #[test]
     fn vscode_theme_round_trip() {
         // Load a VSCode theme
         let original_theme =
-            VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json").expect("Failed to load VSCode theme");
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode theme");
 
         // Serialize it back to JSON
         let serialized = serde_json::to_string_pretty(&original_theme).expect("Failed to serialize VSCode theme");

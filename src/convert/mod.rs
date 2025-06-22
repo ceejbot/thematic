@@ -3,16 +3,17 @@ pub mod zed_to_code;
 
 #[cfg(test)]
 mod tests {
-    use crate::themes::ThemeFile;
-    use crate::themes::vscode::{TokenColors, TokenScope};
-    use crate::themes::zed::Appearance;
+    use crate::editors::ThemeFile;
+    use crate::editors::vscode::{TokenColors, TokenScope};
+    use crate::editors::zed::Appearance;
     use crate::{VsCodeTheme, ZedTheme, ZedThemeFamily};
 
     #[test]
     fn comprehensive_theme_conversion_test() {
         // Test conversion with Rose Pine Moon (dark theme)
-        let vscode_rose_pine = VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json")
-            .expect("Failed to load VSCode Rose Pine Moon theme");
+        let vscode_rose_pine =
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode Rose Pine Moon theme");
 
         let zed_rose_pine: ZedTheme = (&vscode_rose_pine).into();
         let vscode_converted_back: VsCodeTheme = (&zed_rose_pine).into();
@@ -24,7 +25,7 @@ mod tests {
         assert_eq!(vscode_converted_back.theme_type, Some("dark".to_string()));
 
         // Test with Catppuccin Latte (light theme)
-        let vscode_latte = VsCodeTheme::read("fixtures/vscode/catppuccin-latte.json")
+        let vscode_latte = VsCodeTheme::read("fixtures/vscode/catppuccin.catppuccin-vsc-3.17.0/themes/latte.json")
             .expect("Failed to load VSCode Catppuccin Latte theme");
 
         let zed_latte: ZedTheme = (&vscode_latte).into();
@@ -43,8 +44,8 @@ mod tests {
         assert!(zed_rose_pine.style.players.is_some());
 
         // Test Zed to VSCode conversion
-        let zed_family =
-            ZedThemeFamily::read("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed Rose Pine Moon theme");
+        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-theme/themes/rose-pine-moon.json")
+            .expect("Failed to load Zed Rose Pine Moon theme");
 
         let original_zed_theme = &zed_family.themes[0];
         let converted_vscode: VsCodeTheme = original_zed_theme.into();
@@ -79,8 +80,10 @@ mod tests {
     fn color_mapping_accuracy() {
         // Load both VSCode and Zed versions of the same theme
         let vscode_theme =
-            VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json").expect("Failed to load VSCode theme");
-        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-moon.json").expect("Failed to load Zed theme");
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode theme");
+        let zed_family = ZedThemeFamily::read("fixtures/zed/rose-pine-theme/themes/rose-pine-moon.json")
+            .expect("Failed to load Zed theme");
         let thematic = &zed_family.themes[0];
 
         // Convert VSCode to Zed

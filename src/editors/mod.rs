@@ -1,14 +1,10 @@
-pub mod vsc_extension;
 pub mod vscode;
 pub mod zed;
-pub mod zed_extension;
 
-use std::path::{Path, PathBuf};
-
-pub use vsc_extension::*;
 pub use vscode::*;
 pub use zed::*;
-pub use zed_extension::*;
+
+use std::path::{Path, PathBuf};
 
 use crate::ThemeError;
 
@@ -39,7 +35,7 @@ pub trait ThemeFile {
 
 /// Ensure the path has a .json extension, adding it if not present
 /// Returns the path to use, preferring the original if it exists
-fn ensure_json_extension<P: AsRef<Path>>(input: P) -> PathBuf {
+pub(crate) fn ensure_json_extension<P: AsRef<Path>>(input: P) -> PathBuf {
     let mut path = PathBuf::new();
     path.push(&input);
 

@@ -3,8 +3,8 @@
 
 use std::collections::HashMap;
 
-use crate::themes::vscode::{TokenColorRule, TokenColors, TokenScope};
-use crate::themes::zed::{Appearance, FontStyle, HighlightStyle, PlayerColor, ZedThemeStyle};
+use crate::editors::vscode::{TokenColorRule, TokenColors, TokenScope};
+use crate::editors::zed::{Appearance, FontStyle, HighlightStyle, PlayerColor, ZedThemeStyle};
 use crate::{VsCodeTheme, ZedTheme};
 
 impl From<&VsCodeTheme> for ZedTheme {
@@ -351,12 +351,13 @@ fn create_default_players(style: &ZedThemeStyle) -> Vec<PlayerColor> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::themes::ThemeFile;
+    use crate::editors::ThemeFile;
 
     #[test]
     fn vscode_to_zed_conversion() {
         let vscode_theme =
-            VsCodeTheme::read("fixtures/vscode/rose-pine-moon.json").expect("Failed to load VSCode theme");
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode theme");
 
         let thematic: ZedTheme = (&vscode_theme).into();
 
