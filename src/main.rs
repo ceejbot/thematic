@@ -5,13 +5,11 @@
 //! viable Zed theme extensions. It can do the same for VSCode themes.
 
 use std::convert::From;
-use std::io::{BufReader, Read};
-use std::path::PathBuf;
 
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap::{Parser, Subcommand};
-use thematic::editors::{Extension, ThemeFile, VsCodeExtension, ZedExtension};
+use thematic::editors::{Extension, VsCodeExtension, ZedExtension};
 use thematic::*;
 
 /// Convert between VSCode and Zed theme formats
@@ -42,21 +40,19 @@ pub struct Cli {
 pub enum Convert {
     /// Treat the innput as a VSCode theme and convert it to Zed format
     #[command(name = "vscode-to-zed", alias = "vz")]
-    #[command(about = "Convert a VSCode theme JSON file to Zed format")]
+    #[command(about = "Convert a VSCode theme JSON file to Zed format; `vz` for short")]
     VscodeToZed {
-        /// The theme file to convert to Zed format. If left out, input
-        /// is read from stdin and output is written to stdout.
-        #[arg(value_name = "/path/to/theme")]
-        input: Option<String>,
+        /// The name or part of the name of a VSCode theme to convert to Zed format.
+        #[arg(value_name = "theme-name")]
+        input: String,
     },
     /// Treat the input as a Zed theme and convert it tox VSCode format
     #[command(name = "zed-to-vscode", alias = "zv")]
-    #[command(about = "Convert a Zed theme JSON file to VSCode format")]
+    #[command(about = "Convert a Zed theme JSON file to VSCode format; `zv` for short")]
     ZedToVscode {
-        /// The theme file to convert to VSCode format. If left out, input
-        /// is read from stdin and output is written to stdout.
-        #[arg(value_name = "/path/to/theme")]
-        input: Option<String>,
+        /// The name or part of the name of a Zed theme to convert to VSCode format.
+        #[arg(value_name = "theme-name")]
+        input: String,
     },
 }
 
@@ -90,88 +86,29 @@ fn main() -> Result<(), ThemeError> {
 
     match cli.command {
         Convert::VscodeToZed { input } => {
-            if let Some(fname) = input {
-                if let Ok(extension) = VsCodeExtension::read(fname.as_str()) {
-                    let converted = ZedExtension::from(*extension);
-                    converted.write()?;
-                } else {
-                    // this is wrong
-                    let data = read_file(&fname)?;
-                    let theme = VsCodeTheme::from_bytes(data.as_slice())?;
-                    let converted = convert_vscode_to_zed(theme);
-                    converted.write()?;
-                }
-            } else {
-                let bytes = read_stdin()?;
-                let theme = VsCodeTheme::from_bytes(bytes.as_slice())?;
-                let zed = ZedTheme::from(&theme);
-                println!("{}", serde_json::to_string_pretty(&zed)?);
-            }
+            handle_vscode_extension(input)?;
         }
         Convert::ZedToVscode { input } => {
-            if let Some(fname) = input {
-                handle_zed_extension(fname)?;
-            } else {
-                let bytes = read_stdin()?;
-                let family = ZedThemeFamily::from_bytes(bytes.as_slice())?;
-                for theme in family.themes {
-                    let vscode_theme = VsCodeTheme::from(&theme);
-                    println!("{}", serde_json::to_string_pretty(&vscode_theme)?);
-                }
-            }
+            handle_zed_extension(input)?;
         }
     }
 
     Ok(())
 }
 
-fn read_stdin() -> Result<Vec<u8>, ThemeError> {
-    let mut data: Vec<u8> = Vec::new();
-    let mut reader = BufReader::new(std::io::stdin());
-    log::debug!("Reading from stdin...");
-    let count = reader.read(&mut data)?;
+fn handle_vscode_extension(fname: String) -> Result<(), ThemeError> {
+    let vscode = *(VsCodeExtension::read(fname.as_str())?);
 
-    if count == 0 {
-        log::warn!("No theme data to convert!");
-        std::process::exit(1);
-    }
-
-    Ok(data)
-}
-
-fn read_file(name: &String) -> Result<Vec<u8>, ThemeError> {
-    let fname: PathBuf = name.into();
-    let mut data: Vec<u8> = Vec::new();
-    log::debug!("Reading from file '{}'...", fname.display());
-    let mut fp = std::fs::File::open(fname)?;
-
-    let count = fp.read_to_end(&mut data)?;
-    if count == 0 {
-        log::warn!("No theme data to convert!");
-        std::process::exit(1);
-    }
-
-    Ok(data)
-}
-
-fn convert_vscode_to_zed(vscode_theme: VsCodeTheme) -> ZedExtension {
-    log::info!("✓ Loaded VSCode theme: {}", vscode_theme.name);
+    log::info!("✓ Loaded VSCode theme extension: {fname}");
     log::debug!("Theme details:");
-    log::debug!("  - Name: {}", vscode_theme.name);
-    if let Some(theme_type) = vscode_theme.get_theme_type() {
-        log::debug!("  - Type: {}", theme_type);
-    }
-    log::debug!("  - Is dark theme: {}", vscode_theme.is_dark_theme());
+    log::debug!("  - Name: {}", vscode.metadata().name());
+    log::debug!("  - Themes in extension: {}", vscode.metadata().themes().len());
 
-    if let Some(colors) = &vscode_theme.colors {
-        log::debug!("  - Workbench colors: {}", colors.len());
-    }
+    let converted = ZedExtension::from(vscode);
+    converted.write()?;
+    log::info!("✓ Converted to a Zed theme extension.");
 
-    if let Some(token_rules) = vscode_theme.get_token_rules() {
-        log::debug!("  - Token color rules: {}", token_rules.len());
-    }
-
-    ZedExtension::from(&vscode_theme)
+    Ok(())
 }
 
 fn handle_zed_extension(fname: String) -> Result<(), ThemeError> {
@@ -186,6 +123,7 @@ fn handle_zed_extension(fname: String) -> Result<(), ThemeError> {
 
     let converted = VsCodeExtension::from(zed);
     converted.write()?;
+    log::info!("✓ Converted to a VSCode theme extension.");
 
     Ok(())
 }
