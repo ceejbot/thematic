@@ -340,7 +340,7 @@ mod tests {
     }
 
     #[test]
-    fn grouping_worst_case() {
+    fn no_ci_grouping_worst_case() {
         // There are 325+ themes in Rainglow, and they are mostly in light/dark pairs.
         // We want all of the pairs to be grouped into families.
 
