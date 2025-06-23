@@ -9,7 +9,6 @@ format and vice versa. Output is written to the destination editor's default the
 
 The commands have aliases: `zv` for zed-to-vscode, and `vz` for vscode to zed. The second positional argument is the name of the theme to convert, or part of the name of the theme. For example, `thematic vz rainglow` finds the "Rainglow" theme extension for VSCode in the standard VSCode extensions directory, converts all included themes to Zed format (grouping into Zed families), then writes everything out as a new Zed extension in the standard Zed extension location.
 
-
 ```text
 ❯ thematic --help
 Usage: thematic [OPTIONS] <COMMAND>
@@ -20,9 +19,9 @@ Commands:
   help           Print this message or the help of the given subcommand(s)
 
 Options:
-  -q						 Print little-to-no theme information
-  -v						 Print more theme information
-  -h, --help		 Print help (see a summary with '-h')
+  -q             Print little-to-no theme information
+  -v             Print more theme information
+  -h, --help     Print help (see a summary with '-h')
   -V, --version  Print version
 ```
 
@@ -43,16 +42,18 @@ Options:
 
 ## Stochastic parrot hints
 
-This was about two-thirds done with some targeted prompting of Claude Sonnet 4, including refactoring when it didn't do a good enough job. The remaining third was me losing patience with telling the intern what to do exactly. Having it do the tedious map-schemas-to-structs part was worth it, as was the From<T> implementations. It was also sort of okay at writing voluminous tests.
+This was about two-thirds done with some targeted prompting of Claude Sonnet 4, including refactoring when it didn't do a good enough job. The remaining third was me losing patience with telling the intern what to do exactly. Having it do the tedious map-schemas-to-structs part was worth it, as was the From<T> implementations. It was also sort of okay at writing voluminous tests. When it got going with a solid prompt would slam up against consecutive tool use limits very quickly.
 
-My initial input to it was the schemas for both theme formats (in the [schemas directory](./schemas) and examples of each (in the [fixtures directory](./fixures)). I had to do quite a lot of prompting to refactor the results into usability, and it's still pretty messy by even my shoddy standards. However, it did a lot of tedious work for me. When it got going with a solid prompt would slam up against consecutive tool use limits very quickly.
+My initial input to it was the schemas for both theme formats (in the [schemas directory](./schemas) and examples of each (in the [fixtures directory](./fixures)). I had to do quite a lot of prompting to refactor the results into usability, and it's still pretty messy by even my shoddy standards.
 
 The schema for Zed themes is at [https://zed.dev/schema/themes/v0.2.0.json](https://zed.dev/schema/themes/v0.2.0.json).
 
 The schema for VSCode themes:
-* [color-theme schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/color-theme.json) - the overall schema
-		- [workbench-colors schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/workbench-colors.json)
-		- [textmate-colors schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/textmate-colors.json)
+
+* [color-theme schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/color-theme.json)
+* the overall schema
+	- [workbench-colors schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/workbench-colors.json)
+	- [textmate-colors schema](https://github.com/wraith13/vscode-schemas/blob/master/en/latest/schemas/textmate-colors.json)
 
 ## Developing
 
