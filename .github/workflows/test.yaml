@@ -49,4 +49,4 @@ jobs:
                   fi
 
             - name: run the tests
-              run: cargo nextest run -- --skip wont_pass_in_ci
+              run: cargo nextest run -- --skip no_ci

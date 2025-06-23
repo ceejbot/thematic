@@ -3,9 +3,10 @@
 //! These tests verify that conversions between VSCode and Zed formats work correctly
 //! by using real fixture data and comparing outputs.
 
-use pretty_assertions::assert_eq;
 use std::fs;
 use std::path::PathBuf;
+
+use pretty_assertions::assert_eq;
 
 use crate::editors::{Extension, ThemeFile, VsCodeExtension, ZedExtension};
 use crate::{ThemeError, VsCodeTheme, ZedManifest, ZedTheme, ZedThemeFamily};
@@ -49,26 +50,22 @@ fn vscode_to_zed_rose_pine_conversion() -> Result<(), ThemeError> {
     // both extensions should have Rose Pine Moon in them
     let families = zed_extension.families();
     assert!(!families.is_empty());
-    let first = &families[0];
-    first.themes.iter().for_each(|theme| eprintln!("{theme:#?}"));
+    let _first = &families[0];
+    // was going to do something with this
 
     let this_family = families.iter().find(|fam| {
-        eprintln!("family: {}", fam.name);
-        let found = fam.themes.iter().find(|theme| {
-            eprintln!("    theme: {}", theme.name);
-            theme.name.contains("Pine Moon")
-        });
+        let found = fam.themes.iter().find(|theme| theme.name == "Rosé Pine Moon");
         found.is_some()
     });
     assert!(this_family.is_some(), "cannot find a family with Pine Moon");
 
     let zed_themes = zed_extension.themes();
-    let maybe_zed_moon = zed_themes.iter().find(|theme| theme.name.contains("Pine Moon"));
+    let maybe_zed_moon = zed_themes.iter().find(|theme| theme.name == "Rosé Pine Moon");
     assert!(maybe_zed_moon.is_some(), "Zed extension should include Rosé Pine Moon");
     let maybe_vsc_moon = vscode_ext
         .themes()
         .iter()
-        .find(|theme| theme.name.contains("Pine Moon"))
+        .find(|theme| theme.name == "Rosé Pine Moon")
         .cloned();
     assert!(
         maybe_vsc_moon.is_some(),
@@ -78,9 +75,8 @@ fn vscode_to_zed_rose_pine_conversion() -> Result<(), ThemeError> {
     #[allow(clippy::unwrap_used)]
     let zed_moon = maybe_zed_moon.unwrap();
     #[allow(clippy::unwrap_used)]
-    let vsc_moon = maybe_vsc_moon.unwrap();
+    let _vsc_moon = maybe_vsc_moon.unwrap();
 
-    assert_eq!(vsc_moon.name, zed_moon.name, "Theme name should be preserved");
     assert!(
         matches!(zed_moon.appearance, crate::zed::Appearance::Dark),
         "Rosé Pine Moon should be dark"

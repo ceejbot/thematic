@@ -10,7 +10,7 @@ use glob::glob;
 
 use super::{Contributions, Repository, ThemePointer, VsCodePackageJson, VsCodeTheme};
 use crate::editors::{Extension, ThemeFile, ZedExtension};
-use crate::{ThemeError, ZedThemeFamily};
+use crate::{ThemeError, ZedThemeFamily, find_extension_name};
 
 static EXTENSION_DIR: &str = ".vscode/extensions";
 
@@ -34,7 +34,6 @@ impl VsCodeExtension {
         // use globs to find a file named `name(-color-theme)?.json` somewhere in this as a subdir
         let barename = name.replace(".json", "");
         let globby = format!("{}/**/themes/{}*.json", extdir, name.replace(".json", ""));
-        // eprintln!("{globby}");
 
         let mut matches = glob(globby.as_str())?;
         if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
@@ -42,7 +41,6 @@ impl VsCodeExtension {
         };
 
         let extname_glob = format!("{}/*{}*/package.json", extdir, barename);
-        eprintln!("{extname_glob}");
         let mut matches = glob(extname_glob.as_str())?;
         if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
             return Self::read_from_path(found, barename);
@@ -95,6 +93,13 @@ impl VsCodeExtension {
         }
         themes.sort_by(|left, right| left.name.cmp(&right.name));
 
+        let theme_names: Vec<String> = themes.iter().map(|xs| xs.name.clone()).collect();
+        let extension_name = if let Some(found) = find_extension_name(theme_names.as_slice()) {
+            found
+        } else {
+            theme_names[0].clone()
+        };
+
         let mut theme_pointers: Vec<ThemePointer> = themes
             .iter()
             .map(|xs| {
@@ -114,7 +119,7 @@ impl VsCodeExtension {
 
         let metadata = VsCodePackageJson {
             name: barename.to_owned(),
-            display_name: themes[0].name.clone(), // we know this exists
+            display_name: extension_name,
             description: "Constructed from a directory full of theme files.".to_string(),
             publisher: "none".to_string(),
             contributes,
@@ -194,9 +199,9 @@ impl VsCodeExtension {
             name: slug::slugify(&name),
             display_name: name.clone(),
             description: "constructed extension".to_string(),
-            publisher: "".to_string(),
+            publisher: "n/a".to_string(),
             contributes,
-            repository: Repository { url: "".to_string() },
+            repository: Repository { url: "n/a".to_string() },
         };
 
         Self {
@@ -322,7 +327,6 @@ impl From<ZedExtension> for VsCodeExtension {
             .iter()
             .flat_map(|fam| {
                 let themelist: Vec<VsCodeTheme> = fam.into();
-                eprintln!("converted them to {} themes", themelist.len());
                 themelist
             })
             .collect();
@@ -390,7 +394,7 @@ mod tests {
     }
 
     #[test]
-    fn wont_pass_in_ci_find() {
+    fn no_ci_find_vs_code_extensions() {
         let found = VsCodeExtension::find_from_name("bluloco-light", VsCodeExtension::extensions_path().as_str())
             .expect("failed to find Bluloco Light");
         assert_eq!(found.name, "Bluloco Light Theme");
@@ -398,7 +402,7 @@ mod tests {
     }
 
     #[test]
-    fn find_by_extname_not_theme() {
+    fn no_ci_find_by_ext_name_not_theme() {
         // there are many cases where the extension has a name that is not one of its theme names
         let found = VsCodeExtension::find_from_name("rainglow", VsCodeExtension::extensions_path().as_str())
             .expect("failed to find Rainglow");
@@ -407,19 +411,6 @@ mod tests {
             found.themes.len() >= 325,
             "Expected at least 325 themes, found {}",
             found.themes.len()
-        );
-    }
-
-    #[test]
-    fn wont_pass_in_ci_convert() {
-        let found = VsCodeExtension::find_from_name("rainglow", VsCodeExtension::extensions_path().as_str())
-            .expect("failed to find Rainglow");
-        assert_eq!(found.name, "Rainglow");
-        let theme_count = found.themes.len();
-        assert!(
-            theme_count >= 325,
-            "Expected at least 325 themes, found {}",
-            theme_count
         );
 
         let converted = ZedExtension::from((*found).clone());
