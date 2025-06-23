@@ -249,22 +249,11 @@ impl ZedManifest {
     }
 }
 
-/// Figure out the best extension name and the best family groups, if possible,
-/// from the names of incoming themes using text distance algorithms.
-///
-/// This approach uses similarity scoring to group themes that are likely variants
-/// of the same base theme (e.g., "tweed" and "tweed-contrast" should be grouped together).
-fn group_families(theme_names: Vec<String>) -> (Option<String>, Vec<Vec<String>>) {
-    let mut name_iter = theme_names.iter();
-    let Some(first) = name_iter.next() else {
-        return (None, vec![theme_names]);
-    };
-
-    if theme_names.len() <= 3 {
-        return (None, vec![theme_names]);
-    }
-
+fn find_extension_name(theme_names: &[String]) -> Option<String> {
     // Find the longest common prefix for extension naming
+    let mut name_iter = theme_names.iter();
+    let first = name_iter.next()?;
+
     let common_prefix = theme_names.iter().fold(first.clone(), |acc, theme| {
         let mut prefix = String::new();
         for (a, b) in acc.chars().zip(theme.chars()) {
@@ -278,18 +267,36 @@ fn group_families(theme_names: Vec<String>) -> (Option<String>, Vec<Vec<String>>
     });
 
     // Determine extension name based on collection size and common patterns
-    let extension_name = if common_prefix.trim().len() > 3 && theme_names.len() < 50 {
+    if common_prefix.trim().len() > 3 && theme_names.len() < 50 {
         Some(common_prefix.trim().to_string())
     } else if theme_names.len() < 20 {
         Some(first.clone())
     } else {
         None
-    };
+    }
+}
 
+/// Figure out the best extension name and the best family groups, if possible,
+/// from the names of incoming themes using text distance algorithms.
+///
+/// This approach uses similarity scoring to group themes that are likely variants
+/// of the same base theme (e.g., "tweed" and "tweed-contrast" should be grouped together).
+/// Returns a vector of tuples of the name of a family and the names of themes that belong
+/// to that family. If it cannot determine a good name for the family, it returns None.
+fn group_families(theme_names: Vec<String>) -> Vec<(Option<String>, Vec<String>)> {
+    if theme_names.len() <= 3 {
+        return vec![(None, theme_names)];
+    }
     // Use distance-based clustering to group similar theme names
     let groups = cluster_themes_by_distance(&theme_names);
 
-    (extension_name, groups)
+    let mut results = Vec::new();
+    for group in groups {
+        let extension_name = find_extension_name(group.as_slice());
+        results.push((extension_name, group));
+    }
+
+    results
 }
 
 /// Cluster theme names using a hybrid approach that combines word-level and character-level similarity.
@@ -457,18 +464,23 @@ impl From<VsCodeExtension> for ZedExtension {
                 xs.name.clone()
             })
             .collect();
-        let (_extname, groups) = group_families(theme_names);
-        let families: Vec<ZedThemeFamily> = groups
+        let family_name_pairs = group_families(theme_names);
+        let families: Vec<ZedThemeFamily> = family_name_pairs
             .iter()
-            .map(|name_family| {
-                let themes = name_family
+            .map(|(maybe_name, name_family)| {
+                let themes: Vec<ZedTheme> = name_family
                     .iter()
                     .filter_map(|name| theme_map.remove(name).map(|xs| ZedTheme::from(&xs)))
                     .collect();
+                let fam_name = if let Some(n) = maybe_name {
+                    n.clone()
+                } else {
+                    themes.as_slice()[0].name.clone()
+                };
                 ZedThemeFamily {
                     schema: None,
                     author: author.clone(),
-                    name: name.clone(), // we should figure out family names
+                    name: fam_name,
                     themes,
                 }
             })
@@ -612,26 +624,21 @@ mod tests {
             }
         }
 
-        let (maybe_name, grouping) = group_families(theme_names.clone());
+        let family_name_pairs = group_families(theme_names.clone());
+        assert_eq!(family_name_pairs.len(), 3, "expected 3 theme groups");
 
         println!("Rose Pine grouping result:");
-        for (i, group) in grouping.iter().enumerate() {
-            println!("  Group {}: {:?}", i, group);
+        for (i, group) in family_name_pairs.iter().enumerate() {
+            println!("  Group {}: {:#?} {:#?}", i, group.0, group.1);
         }
 
+        let maybe_name = find_extension_name(theme_names.as_slice());
         let name = maybe_name.expect("we expected to identify a name");
         assert_eq!(
             name.as_str(),
             "Rosé Pine",
             "expected theme name to be detected and trimmed"
         );
-        assert_eq!(grouping.len(), 3, "expected 3 theme groups");
-
-        // Debug output
-        println!("Rose Pine grouping result:");
-        for (i, group) in grouping.iter().enumerate() {
-            println!("  Group {}: {:?}", i, group);
-        }
 
         // Test all pairwise combinations to understand why they're being grouped
         for (i, theme1) in theme_names.iter().enumerate() {
@@ -642,8 +649,6 @@ mod tests {
                 }
             }
         }
-
-        assert_eq!(grouping.len(), 3, "expected 3 theme groups");
     }
 
     #[test]
@@ -657,33 +662,51 @@ mod tests {
             "completely-different".to_string(),
         ];
 
-        let (_, groups) = group_families(theme_names);
+        let family_name_pairs = group_families(theme_names);
 
         // Should have 3 groups: tweed variants, tickle variants, and completely-different
-        assert_eq!(groups.len(), 3, "Expected 3 groups, got {}", groups.len());
+        assert_eq!(
+            family_name_pairs.len(),
+            3,
+            "Expected 3 groups, got {}",
+            family_name_pairs.len()
+        );
 
         // Find the tweed group
-        let tweed_group = groups.iter().find(|group| group.contains(&"tweed".to_string()));
-        assert!(tweed_group.is_some(), "Should have a group containing 'tweed'");
-        let tweed_group = tweed_group.unwrap();
+        let found = family_name_pairs.iter().find(|(maybe_name, _families)| {
+            if let Some(name) = maybe_name {
+                name.contains(&"tweed".to_string())
+            } else {
+                false
+            }
+        });
+        assert!(found.is_some(), "Should have a group containing 'tweed'");
+        let (_maybe_name, tweed_group) = found.unwrap();
         assert!(tweed_group.contains(&"tweed-contrast".to_string()));
         assert!(tweed_group.contains(&"tweed-light".to_string()));
 
         // Find the tickle group
-        let tickle_group = groups.iter().find(|group| group.contains(&"tickle".to_string()));
-        assert!(tickle_group.is_some(), "Should have a group containing 'tickle'");
-        let tickle_group = tickle_group.unwrap();
+        let found = family_name_pairs.iter().find(|(maybe_name, _families)| {
+            if let Some(name) = maybe_name {
+                name.contains(&"tickle".to_string())
+            } else {
+                false
+            }
+        });
+        assert!(found.is_some(), "Should have a group containing 'tickle'");
+        let (_maybe_name, tickle_group) = found.unwrap();
         assert!(tickle_group.contains(&"tickle-contrast".to_string()));
 
         // The completely different theme should be in its own group
-        let different_group = groups
-            .iter()
-            .find(|group| group.contains(&"completely-different".to_string()));
-        assert!(
-            different_group.is_some(),
-            "Should have a group containing 'completely-different'"
-        );
-        assert_eq!(different_group.unwrap().len(), 1, "Should be in its own group");
+        let found = family_name_pairs.iter().find(|(maybe_name, _families)| {
+            if let Some(name) = maybe_name {
+                name.contains(&"completely-different".to_string())
+            } else {
+                false
+            }
+        });
+        let (_maybe_name, and_now) = found.expect("Should have a group containing 'completely-different'");
+        assert_eq!(and_now.len(), 1, "Should be in its own group");
     }
 
     #[test]
@@ -698,15 +721,12 @@ mod tests {
         // Get theme names before consuming the extension
         let theme_names: Vec<String> = found.themes().iter().map(|theme| theme.name.clone()).collect();
         assert!(theme_names.len() >= 325, "Expected at least 325 themes");
-        eprintln!("{theme_names:#?}");
+        // eprintln!("{theme_names:#?}");
 
-        let (maybe_name, family_groups) = group_families(theme_names);
-        eprintln!("{maybe_name:#?}");
+        let family_name_pairs = group_families(theme_names);
+        assert_eq!(family_name_pairs.len(), 109);
 
-        assert!(!family_groups.is_empty());
-        assert!(family_groups.len() > 50, "how many DO we have?");
-        eprintln!("groups: {}", family_groups.len());
-        let first_family = family_groups
+        let (_maybe_first_name, first_family) = family_name_pairs
             .first()
             .expect("we said we had more than one, for pete's sake");
         assert!(!first_family.is_empty());

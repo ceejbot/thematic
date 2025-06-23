@@ -3,6 +3,7 @@
 //! These tests verify that conversions between VSCode and Zed formats work correctly
 //! by using real fixture data and comparing outputs.
 
+use pretty_assertions::assert_eq;
 use std::fs;
 use std::path::PathBuf;
 
