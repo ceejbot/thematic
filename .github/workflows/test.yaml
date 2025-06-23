@@ -42,7 +42,7 @@ jobs:
             - name: get cargo-nextest on path
               shell: bash
               run: |
-                  if [[ -z $(which cargo-nextest ]]; then
+                  if [[ -z $(which cargo-nextest) ]]; then
                     curl -sL https://get.nexte.st/latest/linux -o nextest.tgz
                     tar xfz nextest.tgz
                     mv cargo-nextest /home/runner/.cargo/bin
