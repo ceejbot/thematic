@@ -3,8 +3,10 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 use glob::glob;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::editors::{Extension, ThemeFile};
@@ -306,11 +308,9 @@ fn cluster_themes_by_distance(theme_names: &[String]) -> Vec<Vec<String>> {
 
         // Find all themes similar to this one using hybrid similarity
         for (j, other_theme) in theme_names.iter().enumerate() {
-            if i != j && !used[j] {
-                if themes_should_be_grouped(theme, other_theme) {
-                    group.push(other_theme.clone());
-                    used[j] = true;
-                }
+            if i != j && !used[j] && themes_should_be_grouped(theme, other_theme) {
+                group.push(other_theme.clone());
+                used[j] = true;
             }
         }
 
@@ -410,21 +410,13 @@ fn is_theme_variant_pair(suffix1: &str, suffix2: &str) -> bool {
     false
 }
 
+static PUNCT_PATT: LazyLock<Regex> =
+    LazyLock::new(|| regex::Regex::new("^[[:punct:]].+").expect("this regex better be good"));
+
 /// Check if a suffix represents a theme variant
 fn is_variant_suffix(suffix: &str) -> bool {
     let s = suffix.trim().to_lowercase();
-    s.starts_with("(no italics)")
-        || s.starts_with("- no italics")
-        || s.starts_with("no italics")
-        || s.starts_with("-contrast")
-        || s.starts_with("-light")
-        || s.starts_with("-colorblind")
-        || s == "(no italics)"
-        || s == "- no italics"
-        || s == "no italics"
-        || s == "-contrast"
-        || s == "-light"
-        || s == "-colorblind"
+    PUNCT_PATT.is_match(s.as_str())
 }
 
 /// Get the category of a variant (style, brightness, accessibility, etc.)
@@ -473,13 +465,12 @@ impl From<VsCodeExtension> for ZedExtension {
                     .iter()
                     .filter_map(|name| theme_map.remove(name).map(|xs| ZedTheme::from(&xs)))
                     .collect();
-                let family = ZedThemeFamily {
+                ZedThemeFamily {
                     schema: None,
                     author: author.clone(),
                     name: name.clone(), // we should figure out family names
                     themes,
-                };
-                family
+                }
             })
             .collect();
 

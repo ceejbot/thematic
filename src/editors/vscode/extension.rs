@@ -320,15 +320,12 @@ impl From<ZedExtension> for VsCodeExtension {
 
         let themes: Vec<VsCodeTheme> = families
             .iter()
-            .map(|fam| {
-                eprintln!("family has {} themes", fam.themes.len());
+            .flat_map(|fam| {
                 let themelist: Vec<VsCodeTheme> = fam.into();
                 eprintln!("converted them to {} themes", themelist.len());
                 themelist
             })
-            .flatten()
             .collect();
-        eprintln!("---- {} themes", themes.len());
 
         let metadata = VsCodePackageJson {
             name: name.clone(),
