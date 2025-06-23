@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
 use glob::glob;
-use serde::{Deserialize, Serialize};
 
+use super::{Contributions, Repository, ThemePointer, VsCodePackageJson, VsCodeTheme};
 use crate::editors::{Extension, ThemeFile, ZedExtension};
-use crate::{ThemeError, VsCodeTheme, ZedThemeFamily};
+use crate::{ThemeError, ZedThemeFamily};
 
 static EXTENSION_DIR: &str = ".vscode/extensions";
 
@@ -27,89 +27,6 @@ pub struct VsCodeExtension {
     metadata: VsCodePackageJson,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct VsCodePackageJson {
-    name: String,
-    #[serde(rename = "displayName")]
-    display_name: String,
-    description: String,
-    publisher: String,
-    contributes: Contributions,
-    repository: Repository,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Repository {
-    url: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct Contributions {
-    // icon_themes: Vec<IconThemePointer>,
-    themes: Vec<ThemePointer>,
-}
-
-impl VsCodePackageJson {
-    pub fn new(name: &str, display_name: &str, description: &str, publisher: &str, themes: Vec<String>) -> Self {
-        let regular_themes = themes.iter().map(|_xs| todo!()).collect();
-        let contributes = Contributions {
-            themes: regular_themes,
-            // icon_themes: Vec::new(),
-        };
-        Self {
-            name: name.to_owned(),
-            display_name: display_name.to_owned(),
-            description: description.to_owned(),
-            publisher: publisher.to_owned(),
-            contributes,
-            repository: Repository { url: String::default() },
-        }
-    }
-
-    pub fn name(&self) -> &str {
-        self.name.as_str()
-    }
-    pub fn display_name(&self) -> &str {
-        self.display_name.as_str()
-    }
-    pub fn description(&self) -> &str {
-        self.description.as_str()
-    }
-    pub fn publisher(&self) -> &str {
-        self.publisher.as_str()
-    }
-    pub fn repository(&self) -> &str {
-        self.repository.url.as_str()
-    }
-    pub fn themes(&self) -> &[ThemePointer] {
-        self.contributes.themes.as_slice()
-    }
-    /* pub fn icon_themes(&self) -> &[IconThemePointer] {
-        self.contributes.icon_themes.as_slice()
-    } */
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ThemePointer {
-    /// The slug name for this theme variation.
-    label: String,
-    /// regular or dark flavored
-    ui_theme: String,
-    /// The relative path to the file where the theme data is. Eg., ./themes/label.json
-    path: String,
-}
-
-/// Unused at the moment, but at some point we'll start converting icon themes.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct IconThemePointer {
-    id: String,
-    label: String,
-    path: String,
-}
-
 impl VsCodeExtension {
     // start cleanup here
 
@@ -117,13 +34,21 @@ impl VsCodeExtension {
         // use globs to find a file named `name(-color-theme)?.json` somewhere in this as a subdir
         let barename = name.replace(".json", "");
         let globby = format!("{}/**/themes/{}*.json", extdir, name.replace(".json", ""));
-        // ("{globby}");
+        // eprintln!("{globby}");
 
         let mut matches = glob(globby.as_str())?;
-        let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) else {
-            return Err(ThemeError::ThemeNotFound(name.to_owned()));
+        if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
+            return Self::read_from_path(found, barename);
         };
-        Self::read_from_path(found, barename)
+
+        let extname_glob = format!("{}/*{}*/package.json", extdir, barename);
+        eprintln!("{extname_glob}");
+        let mut matches = glob(extname_glob.as_str())?;
+        if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
+            return Self::read_from_path(found, barename);
+        };
+
+        Err(ThemeError::ThemeNotFound(name.to_owned()))
     }
 
     pub fn read_from_path(extpath: PathBuf, barename: String) -> Result<Box<VsCodeExtension>, ThemeError> {
@@ -468,10 +393,41 @@ mod tests {
     }
 
     #[test]
-    fn wont_pass_in_ci() {
+    fn wont_pass_in_ci_find() {
         let found = VsCodeExtension::find_from_name("bluloco-light", VsCodeExtension::extensions_path().as_str())
             .expect("failed to find Bluloco Light");
         assert_eq!(found.name, "Bluloco Light Theme");
         assert_eq!(found.themes.len(), 2);
+    }
+
+    #[test]
+    fn find_by_extname_not_theme() {
+        // there are many cases where the extension has a name that is not one of its theme names
+        let found = VsCodeExtension::find_from_name("rainglow", VsCodeExtension::extensions_path().as_str())
+            .expect("failed to find Rainglow");
+        assert_eq!(found.name, "Rainglow");
+        assert!(
+            found.themes.len() >= 325,
+            "Expected at least 325 themes, found {}",
+            found.themes.len()
+        );
+    }
+
+    #[test]
+    fn wont_pass_in_ci_convert() {
+        let found = VsCodeExtension::find_from_name("rainglow", VsCodeExtension::extensions_path().as_str())
+            .expect("failed to find Rainglow");
+        assert_eq!(found.name, "Rainglow");
+        let theme_count = found.themes.len();
+        assert!(
+            theme_count >= 325,
+            "Expected at least 325 themes, found {}",
+            theme_count
+        );
+
+        let converted = ZedExtension::from((*found).clone());
+        assert_eq!(converted.name(), found.name);
+        let family = converted.families().first().expect("we have at least one theme family");
+        assert_eq!(family.themes.len(), 3, "we expected grouping to work");
     }
 }
