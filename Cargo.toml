@@ -33,3 +33,4 @@ toml = "0.8.23"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
+tempfile = "3.8.1"

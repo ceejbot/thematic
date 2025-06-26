@@ -22,4 +22,10 @@ pub enum ThemeError {
     TomlSerError(#[from] toml::ser::Error),
     #[error("Toml deserialization: {0}")]
     TomlDeserError(#[from] toml::de::Error),
+    #[error("Icon file not found: {0} at path {1}")]
+    IconFileNotFound(String, String),
+    #[error("Invalid icon path: {0}")]
+    InvalidIconPath(String),
+    #[error("Icon processing error: {0}")]
+    IconProcessingError(String),
 }

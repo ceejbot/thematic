@@ -11,6 +11,7 @@
 pub mod convert;
 pub mod editors;
 pub mod errors;
+pub mod icon_files;
 
 #[cfg(test)]
 mod conversion_tests;
@@ -18,3 +19,4 @@ mod conversion_tests;
 pub use convert::*;
 pub use editors::*;
 pub use errors::ThemeError;
+pub use icon_files::IconFileManager;

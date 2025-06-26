@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
 use crate::editors::ThemeFile;
+use crate::icon_files::IconFileManager;
 use crate::{ThemeError, vscode::VsCodeIconTheme};
 
 /// The schema for Zed icon themes is here:
@@ -56,6 +57,43 @@ impl ZedIconThemeFamily {
     }
 }
 
+impl ZedIconThemeFamily {
+    /// Create an IconFileManager from this Zed icon theme family
+    ///
+    /// # Arguments
+    /// * `dest_base` - Base directory where converted theme should be placed
+    /// * `dest_subdir` - Subdirectory within dest_base for icons (e.g., "icons")
+    pub fn create_icon_manager<P: AsRef<Path>>(
+        &self,
+        dest_base: P,
+        dest_subdir: &str,
+    ) -> Result<IconFileManager, ThemeError> {
+        let source_base = self
+            .source_path
+            .as_ref()
+            .and_then(|p| p.parent())
+            .ok_or_else(|| ThemeError::IconProcessingError("No source path available".to_string()))?;
+
+        let mut manager = IconFileManager::new(source_base, dest_base.as_ref(), dest_subdir);
+
+        // Track icons from all themes in the family
+        for theme in &self.themes {
+            theme.track_icons(&mut manager)?;
+        }
+
+        Ok(manager)
+    }
+
+    /// Get all icon paths referenced in this theme family
+    pub fn get_icon_paths(&self) -> Vec<String> {
+        let mut paths = Vec::new();
+        for theme in &self.themes {
+            paths.extend(theme.get_icon_paths());
+        }
+        paths
+    }
+}
+
 /// A single icon theme within a theme family
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,16 +103,12 @@ pub struct ZedIconTheme {
     /// Theme appearance: "light" or "dark"
     pub appearance: String,
     /// Directory/folder icon configuration
-    #[serde(rename = "directory_icons")]
     pub directory_icons: Option<DirectoryIcons>,
     /// Mapping of specific file names (stems) to icon types
-    #[serde(rename = "file_stems")]
     pub file_stems: Option<HashMap<String, String>>,
     /// Mapping of file extensions to icon types
-    #[serde(rename = "file_suffixes")]
     pub file_suffixes: Option<HashMap<String, String>>,
     /// Definition of icon types and their associated files
-    #[serde(rename = "file_icons")]
     pub file_icons: Option<HashMap<String, FileIcon>>,
 }
 
@@ -99,6 +133,74 @@ impl ZedIconTheme {
         let content = serde_json::to_string_pretty(self)?;
         std::fs::write(destination, content)?;
         Ok(())
+    }
+
+    /// Track icons from this theme in the provided IconFileManager
+    pub fn track_icons(&self, manager: &mut IconFileManager) -> Result<(), ThemeError> {
+        // Track directory icons
+        if let Some(dir_icons) = &self.directory_icons {
+            if let Some(_filename) = IconFileManager::extract_filename(&dir_icons.collapsed) {
+                manager.track_icon("directory_collapsed".to_string(), &dir_icons.collapsed);
+            }
+            if let Some(_filename) = IconFileManager::extract_filename(&dir_icons.expanded) {
+                manager.track_icon("directory_expanded".to_string(), &dir_icons.expanded);
+            }
+        }
+
+        // Track file icons
+        if let Some(file_icons) = &self.file_icons {
+            for (icon_type, file_icon) in file_icons {
+                if let Some(_filename) = IconFileManager::extract_filename(&file_icon.path) {
+                    manager.track_icon(icon_type.clone(), &file_icon.path);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get all icon paths referenced in this theme
+    pub fn get_icon_paths(&self) -> Vec<String> {
+        let mut paths = Vec::new();
+
+        // Add directory icons
+        if let Some(dir_icons) = &self.directory_icons {
+            paths.push(dir_icons.collapsed.clone());
+            paths.push(dir_icons.expanded.clone());
+        }
+
+        // Add file icons
+        if let Some(file_icons) = &self.file_icons {
+            for file_icon in file_icons.values() {
+                paths.push(file_icon.path.clone());
+            }
+        }
+
+        paths
+    }
+
+    /// Update icon paths to use new base directory
+    ///
+    /// This is useful after copying icons to a new location
+    pub fn update_icon_paths(&mut self, path_mapping: &HashMap<String, String>) {
+        // Update directory icons
+        if let Some(dir_icons) = &mut self.directory_icons {
+            if let Some(new_path) = path_mapping.get(&dir_icons.collapsed) {
+                dir_icons.collapsed = new_path.clone();
+            }
+            if let Some(new_path) = path_mapping.get(&dir_icons.expanded) {
+                dir_icons.expanded = new_path.clone();
+            }
+        }
+
+        // Update file icons
+        if let Some(file_icons) = &mut self.file_icons {
+            for file_icon in file_icons.values_mut() {
+                if let Some(new_path) = path_mapping.get(&file_icon.path) {
+                    file_icon.path = new_path.clone();
+                }
+            }
+        }
     }
 }
 
@@ -257,5 +359,103 @@ mod tests {
         assert_eq!(parsed.themes.len(), 1);
         assert_eq!(parsed.themes[0].name, "Test Theme");
         assert_eq!(parsed.themes[0].appearance, "dark");
+    }
+
+    #[test]
+    fn can_create_icon_manager() {
+        use std::fs;
+        use tempfile::TempDir;
+
+        // Create temp directories
+        let source_dir = TempDir::new().expect("Failed to create temp source dir");
+        let dest_dir = TempDir::new().expect("Failed to create temp dest dir");
+
+        // Create test icon files
+        let icons_dir = source_dir.path().join("icons");
+        fs::create_dir_all(&icons_dir).expect("Failed to create icons dir");
+
+        let test_svg = r#"<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>"#;
+        fs::write(icons_dir.join("file.svg"), test_svg).expect("Failed to write test icon");
+        fs::write(icons_dir.join("folder.svg"), test_svg).expect("Failed to write test icon");
+        fs::write(icons_dir.join("folder-open.svg"), test_svg).expect("Failed to write test icon");
+
+        // Create test file icons
+        let mut file_icons = HashMap::new();
+        file_icons.insert(
+            "default".to_string(),
+            FileIcon {
+                path: "./icons/file.svg".to_string(),
+            },
+        );
+
+        // Create test theme
+        let theme = ZedIconTheme {
+            name: "Test Theme".to_string(),
+            appearance: "dark".to_string(),
+            directory_icons: Some(DirectoryIcons {
+                collapsed: "./icons/folder.svg".to_string(),
+                expanded: "./icons/folder-open.svg".to_string(),
+            }),
+            file_stems: None,
+            file_suffixes: None,
+            file_icons: Some(file_icons),
+        };
+
+        // Create theme family
+        let theme_family = ZedIconThemeFamily {
+            schema: None,
+            name: "Test Icon Theme".to_string(),
+            author: "Test Author".to_string(),
+            themes: vec![theme],
+            source_path: Some(source_dir.path().join("theme.json")),
+        };
+
+        // Create icon manager
+        let manager = theme_family
+            .create_icon_manager(dest_dir.path(), "icons")
+            .expect("Should create icon manager");
+
+        // Verify the manager has tracked the icons
+        assert!(manager.has_icon("directory_collapsed"));
+        assert!(manager.has_icon("directory_expanded"));
+        assert!(manager.has_icon("default"));
+        assert_eq!(manager.tracked_icons().len(), 3);
+
+        // Test copying icons
+        manager.copy_icons().expect("Should copy icons successfully");
+
+        // Verify icons were copied
+        assert!(dest_dir.path().join("icons/file.svg").exists());
+        assert!(dest_dir.path().join("icons/folder.svg").exists());
+        assert!(dest_dir.path().join("icons/folder-open.svg").exists());
+    }
+
+    #[test]
+    fn can_get_icon_paths() {
+        let mut file_icons = HashMap::new();
+        file_icons.insert(
+            "default".to_string(),
+            FileIcon {
+                path: "./icons/file.svg".to_string(),
+            },
+        );
+
+        let theme = ZedIconTheme {
+            name: "Test Theme".to_string(),
+            appearance: "dark".to_string(),
+            directory_icons: Some(DirectoryIcons {
+                collapsed: "./icons/folder.svg".to_string(),
+                expanded: "./icons/folder-open.svg".to_string(),
+            }),
+            file_stems: None,
+            file_suffixes: None,
+            file_icons: Some(file_icons),
+        };
+
+        let paths = theme.get_icon_paths();
+        assert_eq!(paths.len(), 3);
+        assert!(paths.contains(&"./icons/file.svg".to_string()));
+        assert!(paths.contains(&"./icons/folder.svg".to_string()));
+        assert!(paths.contains(&"./icons/folder-open.svg".to_string()));
     }
 }
