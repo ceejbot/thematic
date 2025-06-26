@@ -45,27 +45,12 @@ where
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Contributions {
-    // icon_themes: Vec<IconThemePointer>,
+    #[serde(default)]
+    pub(crate) icon_themes: Vec<IconThemePointer>,
     pub(crate) themes: Vec<ThemePointer>,
 }
 
 impl VsCodePackageJson {
-    pub fn new(name: &str, display_name: &str, description: &str, publisher: &str, themes: Vec<String>) -> Self {
-        let regular_themes = themes.iter().map(|_xs| todo!()).collect();
-        let contributes = Contributions {
-            themes: regular_themes,
-            // icon_themes: Vec::new(),
-        };
-        Self {
-            name: name.to_owned(),
-            display_name: display_name.to_owned(),
-            description: description.to_owned(),
-            publisher: publisher.to_owned(),
-            contributes,
-            repository: Repository { url: String::default() },
-        }
-    }
-
     pub fn name(&self) -> &str {
         self.name.as_str()
     }
@@ -84,15 +69,15 @@ impl VsCodePackageJson {
     pub fn themes(&self) -> &[ThemePointer] {
         self.contributes.themes.as_slice()
     }
-    /* pub fn icon_themes(&self) -> &[IconThemePointer] {
+    pub fn icon_themes(&self) -> &[IconThemePointer] {
         self.contributes.icon_themes.as_slice()
-    } */
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ThemePointer {
-    /// The slug name for this theme variation.
+    /// The human-readable name for this theme variation.
     pub(crate) label: String,
     /// regular or dark flavored
     pub(crate) ui_theme: String,
@@ -100,11 +85,14 @@ pub struct ThemePointer {
     pub(crate) path: String,
 }
 
-/// Unused at the moment, but at some point we'll start converting icon themes.
+/// We also convert icon themes while we're there.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct IconThemePointer {
+    /// The slug name for this icon theme.
     pub(crate) id: String,
+    /// The human-readable label for this icon theme.
     pub(crate) label: String,
+    /// The relative path to the file where the icon theme json file is.
     pub(crate) path: String,
 }

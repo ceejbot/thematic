@@ -171,8 +171,7 @@ impl Extension for ZedExtension {
     }
 
     fn build_official_path(name: &str, extdir: &str) -> String {
-        let twiddle = home::home_dir().unwrap_or_default();
-        format!("{}/{}/{}", twiddle.display(), extdir, name)
+        format!("{}/{}", extdir, name)
     }
 
     fn name(&self) -> &str {

@@ -149,10 +149,7 @@ jobs:
               shell: bash
               run: |
                   curl -sLo formulaic.tgz https://github.com/ceejbot/formulaic/releases/latest/download/formulaic-x86_64-unknown-linux-gnu.tar.gz
-                  tar tfz formulaic.tgz
-                  tar xfz formulaic.tgz
-                  mv target/release/formulaic .
-                  # tar --strip-components=3 -xzf formulaic.tgz target/release/formulaic
+                  tar --strip-components=4 -xzf formulaic.tgz ./target/release/formulaic
 
             - name: set ref_name
               shell: bash

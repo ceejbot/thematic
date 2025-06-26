@@ -1,0 +1,23 @@
+id = "serendipity"
+name = "Serendipity Themes"
+version = "0.0.8"
+schema_version = 1
+description = "Relaxed, gentle and modern | Serendipity theme for Zed"
+repository = "https://github.com/meocoder31099/Serendipity-Theme-Zed"
+authors = ["Nguyen Dang Vinh <meocoder@gmail.com>"]
+themes = ["themes/serendipity.json"]
+icon_themes = ["icon_themes/serendipity-icon-theme.json"]
+languages = []
+capabilities = []
+
+[lib]
+
+[grammars]
+
+[language_servers]
+
+[context_servers]
+
+[slash_commands]
+
+[indexed_docs_providers]

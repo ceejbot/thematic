@@ -114,7 +114,7 @@ impl VsCodeExtension {
         theme_pointers.sort_by(|left, right| left.label.cmp(&right.label));
         let contributes = Contributions {
             themes: theme_pointers,
-            // icon_themes: Vec::new(),
+            icon_themes: Vec::new(),
         };
 
         let metadata = VsCodePackageJson {
@@ -192,7 +192,7 @@ impl VsCodeExtension {
             .collect();
         let contributes = Contributions {
             themes: theme_pointers,
-            // icon_themes: Vec::new(),
+            icon_themes: Vec::new(),
         };
 
         let metadata = VsCodePackageJson {
@@ -319,7 +319,7 @@ impl From<ZedExtension> for VsCodeExtension {
             })
             .collect();
         let contributes = Contributions {
-            // icon_themes: Vec::new(),
+            icon_themes: Vec::new(),
             themes: theme_pointers,
         };
 
