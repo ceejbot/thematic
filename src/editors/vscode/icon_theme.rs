@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
-use crate::ThemeError;
 use crate::editors::ThemeFile;
 use crate::icon_files::IconFileManager;
 use crate::zed::ZedIconThemeFamily;
+use crate::{ThemeError, ZedIconTheme};
 
 /// The structure of VSCode icon theme json files
 #[skip_serializing_none]
@@ -166,9 +166,126 @@ impl VsCodeIconTheme {
 }
 
 impl From<ZedIconThemeFamily> for Vec<VsCodeIconTheme> {
-    fn from(_value: ZedIconThemeFamily) -> Self {
-        // TODO fill in conversion
-        todo!()
+    fn from(zed_family: ZedIconThemeFamily) -> Self {
+        let mut vscode_themes = Vec::new();
+
+        for zed_theme in zed_family.themes {
+            let vscode_theme = VsCodeIconTheme::from(zed_theme);
+            vscode_themes.push(vscode_theme);
+        }
+
+        vscode_themes
+    }
+}
+
+impl From<ZedIconTheme> for VsCodeIconTheme {
+    fn from(zed_theme: ZedIconTheme) -> Self {
+        let mut icon_definitions = HashMap::new();
+        let mut file_extensions = HashMap::new();
+        let mut file_names = HashMap::new();
+
+        // Convert file icons to icon definitions
+        if let Some(file_icons) = &zed_theme.file_icons {
+            for (icon_type, file_icon) in file_icons {
+                // Create VSCode icon key (add underscore prefix)
+                let icon_key = format!("_{}", icon_type);
+
+                icon_definitions.insert(
+                    icon_key.clone(),
+                    IconDefinition {
+                        icon_path: Some(file_icon.path.clone()),
+                        font_color: None,
+                        font_size: None,
+                        font_character: None,
+                        font_id: None,
+                    },
+                );
+            }
+        }
+
+        // Add directory icons to icon definitions
+        let (folder_key, folder_expanded_key) = if let Some(dir_icons) = &zed_theme.directory_icons {
+            let folder_key = "_folder".to_string();
+            let folder_expanded_key = "_folder-open".to_string();
+
+            icon_definitions.insert(
+                folder_key.clone(),
+                IconDefinition {
+                    icon_path: Some(dir_icons.collapsed.clone()),
+                    font_color: None,
+                    font_size: None,
+                    font_character: None,
+                    font_id: None,
+                },
+            );
+
+            icon_definitions.insert(
+                folder_expanded_key.clone(),
+                IconDefinition {
+                    icon_path: Some(dir_icons.expanded.clone()),
+                    font_color: None,
+                    font_size: None,
+                    font_character: None,
+                    font_id: None,
+                },
+            );
+
+            (Some(folder_key), Some(folder_expanded_key))
+        } else {
+            (None, None)
+        };
+
+        // Convert file suffixes to file extensions
+        if let Some(suffixes) = &zed_theme.file_suffixes {
+            for (extension, icon_type) in suffixes {
+                let icon_key = format!("_{}", icon_type);
+                if icon_definitions.contains_key(&icon_key) {
+                    file_extensions.insert(extension.clone(), icon_key);
+                }
+            }
+        }
+
+        // Convert file stems to file names
+        if let Some(stems) = &zed_theme.file_stems {
+            for (filename, icon_type) in stems {
+                let icon_key = format!("_{}", icon_type);
+                if icon_definitions.contains_key(&icon_key) {
+                    file_names.insert(filename.clone(), icon_key);
+                }
+            }
+        }
+
+        // Get default file icon
+        let default_file_icon = icon_definitions
+            .keys()
+            .find(|k| k.contains("file") && !k.contains("folder"))
+            .cloned()
+            .or_else(|| icon_definitions.keys().next().cloned());
+
+        VsCodeIconTheme {
+            icon_definitions: if icon_definitions.is_empty() {
+                None
+            } else {
+                Some(icon_definitions)
+            },
+            file: default_file_icon,
+            folder: folder_key,
+            folder_expanded: folder_expanded_key,
+            root_folder: None,
+            root_folder_expanded: None,
+            file_names: if file_names.is_empty() { None } else { Some(file_names) },
+            file_extensions: if file_extensions.is_empty() {
+                None
+            } else {
+                Some(file_extensions)
+            },
+            folder_names: None,
+            folder_names_expanded: None,
+            language_ids: None,
+            hides_explorer_arrows: None,
+            show_language_mode_icons: None,
+            source_path: None,
+        }
     }
 }
 
@@ -383,5 +500,314 @@ mod tests {
         assert_eq!(paths.len(), 2);
         assert!(paths.contains(&"./icons/file.svg".to_string()));
         assert!(paths.contains(&"./icons/folder.svg".to_string()));
+    }
+
+    #[test]
+    fn test_zed_to_vscode_conversion() {
+        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme};
+        use std::collections::HashMap;
+
+        // Create test file icons
+        let mut file_icons = HashMap::new();
+        file_icons.insert(
+            "code".to_string(),
+            FileIcon {
+                path: "./icons/file.svg".to_string(),
+            },
+        );
+        file_icons.insert(
+            "special".to_string(),
+            FileIcon {
+                path: "./icons/file-special.svg".to_string(),
+            },
+        );
+
+        // Create test file suffixes
+        let mut file_suffixes = HashMap::new();
+        file_suffixes.insert("js".to_string(), "code".to_string());
+        file_suffixes.insert("ts".to_string(), "code".to_string());
+
+        // Create test file stems
+        let mut file_stems = HashMap::new();
+        file_stems.insert("README.md".to_string(), "special".to_string());
+
+        // Create a Zed icon theme
+        let zed_theme = ZedIconTheme {
+            name: "Test Zed Theme".to_string(),
+            appearance: "dark".to_string(),
+            directory_icons: Some(DirectoryIcons {
+                collapsed: "./icons/folder.svg".to_string(),
+                expanded: "./icons/folder-open.svg".to_string(),
+            }),
+            file_stems: Some(file_stems),
+            file_suffixes: Some(file_suffixes),
+            file_icons: Some(file_icons),
+        };
+
+        // Convert to VSCode theme
+        let vscode_theme = VsCodeIconTheme::from(zed_theme);
+
+        // Verify conversion
+        let icon_definitions = vscode_theme.icon_definitions.expect("Should have icon definitions");
+
+        // Check that file icons were converted
+        assert!(icon_definitions.contains_key("_code"));
+        assert!(icon_definitions.contains_key("_special"));
+        assert_eq!(
+            icon_definitions.get("_code").unwrap().icon_path,
+            Some("./icons/file.svg".to_string())
+        );
+        assert_eq!(
+            icon_definitions.get("_special").unwrap().icon_path,
+            Some("./icons/file-special.svg".to_string())
+        );
+
+        // Check directory icons
+        assert!(icon_definitions.contains_key("_folder"));
+        assert!(icon_definitions.contains_key("_folder-open"));
+        assert_eq!(
+            icon_definitions.get("_folder").unwrap().icon_path,
+            Some("./icons/folder.svg".to_string())
+        );
+        assert_eq!(
+            icon_definitions.get("_folder-open").unwrap().icon_path,
+            Some("./icons/folder-open.svg".to_string())
+        );
+
+        // Check folder mappings
+        assert_eq!(vscode_theme.folder, Some("_folder".to_string()));
+        assert_eq!(vscode_theme.folder_expanded, Some("_folder-open".to_string()));
+
+        // Check file extensions
+        let file_extensions = vscode_theme.file_extensions.expect("Should have file extensions");
+        assert_eq!(file_extensions.get("js"), Some(&"_code".to_string()));
+        assert_eq!(file_extensions.get("ts"), Some(&"_code".to_string()));
+
+        // Check file names
+        let file_names = vscode_theme.file_names.expect("Should have file names");
+        assert_eq!(file_names.get("README.md"), Some(&"_special".to_string()));
+    }
+
+    #[test]
+    fn test_zed_family_to_vscode_themes_conversion() {
+        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme, ZedIconThemeFamily};
+        use std::collections::HashMap;
+
+        // Create first theme
+        let mut file_icons_1 = HashMap::new();
+        file_icons_1.insert(
+            "code".to_string(),
+            FileIcon {
+                path: "./icons/file.svg".to_string(),
+            },
+        );
+
+        let mut file_suffixes_1 = HashMap::new();
+        file_suffixes_1.insert("js".to_string(), "code".to_string());
+
+        let theme_1 = ZedIconTheme {
+            name: "Dark Theme".to_string(),
+            appearance: "dark".to_string(),
+            directory_icons: Some(DirectoryIcons {
+                collapsed: "./icons/folder.svg".to_string(),
+                expanded: "./icons/folder-open.svg".to_string(),
+            }),
+            file_stems: None,
+            file_suffixes: Some(file_suffixes_1),
+            file_icons: Some(file_icons_1),
+        };
+
+        // Create second theme
+        let mut file_icons_2 = HashMap::new();
+        file_icons_2.insert(
+            "text".to_string(),
+            FileIcon {
+                path: "./icons/text.svg".to_string(),
+            },
+        );
+
+        let mut file_suffixes_2 = HashMap::new();
+        file_suffixes_2.insert("txt".to_string(), "text".to_string());
+
+        let theme_2 = ZedIconTheme {
+            name: "Light Theme".to_string(),
+            appearance: "light".to_string(),
+            directory_icons: Some(DirectoryIcons {
+                collapsed: "./icons/folder-light.svg".to_string(),
+                expanded: "./icons/folder-open-light.svg".to_string(),
+            }),
+            file_stems: None,
+            file_suffixes: Some(file_suffixes_2),
+            file_icons: Some(file_icons_2),
+        };
+
+        // Create theme family
+        let zed_family = ZedIconThemeFamily {
+            schema: Some("https://zed.dev/schema/icon_themes/v0.2.0.json".to_string()),
+            name: "Test Family".to_string(),
+            author: "Test Author".to_string(),
+            themes: vec![theme_1, theme_2],
+            source_path: None,
+        };
+
+        // Convert to VSCode themes
+        let vscode_themes = Vec::<VsCodeIconTheme>::from(zed_family);
+
+        // Should have 2 themes
+        assert_eq!(vscode_themes.len(), 2);
+
+        // Check first theme
+        let theme_1_vscode = &vscode_themes[0];
+        let icon_defs_1 = theme_1_vscode.icon_definitions.as_ref().unwrap();
+        assert!(icon_defs_1.contains_key("_code"));
+        assert!(icon_defs_1.contains_key("_folder"));
+
+        let file_exts_1 = theme_1_vscode.file_extensions.as_ref().unwrap();
+        assert_eq!(file_exts_1.get("js"), Some(&"_code".to_string()));
+
+        // Check second theme
+        let theme_2_vscode = &vscode_themes[1];
+        let icon_defs_2 = theme_2_vscode.icon_definitions.as_ref().unwrap();
+        assert!(icon_defs_2.contains_key("_text"));
+        assert!(icon_defs_2.contains_key("_folder"));
+
+        let file_exts_2 = theme_2_vscode.file_extensions.as_ref().unwrap();
+        assert_eq!(file_exts_2.get("txt"), Some(&"_text".to_string()));
+    }
+
+    #[test]
+    fn test_conversion_with_file_copying() {
+        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme, ZedIconThemeFamily};
+        use std::collections::HashMap;
+        use std::fs;
+        use tempfile::TempDir;
+
+        // Create temp directories for source and destination
+        let source_dir = TempDir::new().expect("Failed to create temp source dir");
+        let dest_dir = TempDir::new().expect("Failed to create temp dest dir");
+
+        // Create source icon files
+        let icons_dir = source_dir.path().join("icons");
+        fs::create_dir_all(&icons_dir).expect("Failed to create icons dir");
+
+        let test_svg = r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="blue"/></svg>"#;
+        fs::write(icons_dir.join("file.svg"), test_svg).expect("Failed to write file icon");
+        fs::write(icons_dir.join("folder.svg"), test_svg).expect("Failed to write folder icon");
+        fs::write(icons_dir.join("folder-open.svg"), test_svg).expect("Failed to write folder-open icon");
+
+        // Create a Zed theme family
+        let mut file_icons = HashMap::new();
+        file_icons.insert(
+            "code".to_string(),
+            FileIcon {
+                path: "./icons/file.svg".to_string(),
+            },
+        );
+
+        let mut file_suffixes = HashMap::new();
+        file_suffixes.insert("rs".to_string(), "code".to_string());
+        file_suffixes.insert("js".to_string(), "code".to_string());
+
+        let zed_theme = ZedIconTheme {
+            name: "Test Theme".to_string(),
+            appearance: "dark".to_string(),
+            directory_icons: Some(DirectoryIcons {
+                collapsed: "./icons/folder.svg".to_string(),
+                expanded: "./icons/folder-open.svg".to_string(),
+            }),
+            file_stems: None,
+            file_suffixes: Some(file_suffixes),
+            file_icons: Some(file_icons),
+        };
+
+        let zed_family = ZedIconThemeFamily {
+            schema: None,
+            name: "Test Icon Family".to_string(),
+            author: "Test Author".to_string(),
+            themes: vec![zed_theme],
+            source_path: Some(source_dir.path().join("theme.json")),
+        };
+
+        // Create icon manager from Zed theme
+        let icon_manager = zed_family
+            .create_icon_manager(dest_dir.path(), "icons")
+            .expect("Should create icon manager");
+
+        // Copy icons to destination
+        icon_manager.copy_icons().expect("Should copy icons successfully");
+
+        // Convert to VSCode themes
+        let vscode_themes = Vec::<VsCodeIconTheme>::from(zed_family);
+        assert_eq!(vscode_themes.len(), 1);
+
+        // Verify the conversion worked
+        let vscode_theme = &vscode_themes[0];
+        let icon_definitions = vscode_theme.icon_definitions.as_ref().unwrap();
+
+        assert!(icon_definitions.contains_key("_code"));
+        assert!(icon_definitions.contains_key("_folder"));
+        assert!(icon_definitions.contains_key("_folder-open"));
+
+        // Verify files were actually copied
+        assert!(dest_dir.path().join("icons/file.svg").exists());
+        assert!(dest_dir.path().join("icons/folder.svg").exists());
+        assert!(dest_dir.path().join("icons/folder-open.svg").exists());
+
+        // Verify file content is correct
+        let copied_content =
+            fs::read_to_string(dest_dir.path().join("icons/file.svg")).expect("Should read copied file");
+        assert!(copied_content.contains("svg"));
+        assert!(copied_content.contains("blue"));
+    }
+
+    #[test]
+    fn test_fixture_conversion() {
+        // Test conversion of actual fixture data
+        let data = std::fs::read_to_string("fixtures/vscode/mvllow.rose-pine-2.14.0/icons/rose-pine-icon-theme.json")
+            .expect("We expect to be able to read a test fixture");
+        let vscode_theme: VsCodeIconTheme =
+            serde_json::from_str(data.as_str()).expect("We expect to be able to parse the icon theme json file.");
+
+        // Convert to Zed theme
+        let zed_theme = ZedIconTheme::from(vscode_theme);
+
+        // Verify basic conversion worked
+        assert_eq!(zed_theme.name, "Converted Icon Theme");
+        assert_eq!(zed_theme.appearance, "dark");
+
+        // Should have directory icons
+        let dir_icons = zed_theme.directory_icons.as_ref().expect("Should have directory icons");
+        assert_eq!(dir_icons.collapsed, "./folder.svg");
+        assert_eq!(dir_icons.expanded, "./folder-open.svg");
+
+        // Should have file icons
+        let file_icons = zed_theme.file_icons.as_ref().expect("Should have file icons");
+        assert!(file_icons.contains_key("file"));
+        assert!(file_icons.contains_key("file-special"));
+
+        // Should have file extensions
+        let file_suffixes = zed_theme.file_suffixes.as_ref().expect("Should have file suffixes");
+        assert!(file_suffixes.contains_key("css"));
+        assert!(file_suffixes.contains_key("astro"));
+
+        // Should have file names
+        let file_stems = zed_theme.file_stems.as_ref().expect("Should have file stems");
+        assert!(file_stems.contains_key("_pinecone-color-theme.json"));
+
+        // Test round-trip conversion back to VSCode
+        let round_trip_vscode = VsCodeIconTheme::from(zed_theme.clone());
+
+        // Verify we still have icon definitions
+        let icon_definitions = round_trip_vscode
+            .icon_definitions
+            .expect("Should have icon definitions");
+        assert!(icon_definitions.contains_key("_file"));
+        assert!(icon_definitions.contains_key("_file-special"));
+        assert!(icon_definitions.contains_key("_folder"));
+        assert!(icon_definitions.contains_key("_folder-open"));
+
+        // Verify folder mappings
+        assert_eq!(round_trip_vscode.folder, Some("_folder".to_string()));
+        assert_eq!(round_trip_vscode.folder_expanded, Some("_folder-open".to_string()));
     }
 }

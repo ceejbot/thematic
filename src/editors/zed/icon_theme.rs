@@ -205,9 +205,89 @@ impl ZedIconTheme {
 }
 
 impl From<VsCodeIconTheme> for ZedIconTheme {
-    fn from(_value: VsCodeIconTheme) -> Self {
-        // TODO fill in conversion
-        todo!()
+    fn from(vscode_theme: VsCodeIconTheme) -> Self {
+        // Create a default theme name if none is available
+        let name = "Converted Icon Theme".to_string();
+
+        // Determine appearance based on common dark theme indicators
+        let appearance = "dark".to_string(); // Default to dark, could be made smarter
+
+        // Convert directory icons
+        let directory_icons = if let Some(icon_definitions) = &vscode_theme.icon_definitions {
+            let folder_key = vscode_theme.folder.as_deref().unwrap_or("_folder");
+            let folder_expanded_key = vscode_theme.folder_expanded.as_deref().unwrap_or("_folder-open");
+
+            let collapsed_path = icon_definitions
+                .get(folder_key)
+                .and_then(|def| def.icon_path.as_ref())
+                .cloned()
+                .unwrap_or_else(|| "./icons/folder.svg".to_string());
+
+            let expanded_path = icon_definitions
+                .get(folder_expanded_key)
+                .and_then(|def| def.icon_path.as_ref())
+                .cloned()
+                .unwrap_or_else(|| "./icons/folder-open.svg".to_string());
+
+            Some(DirectoryIcons {
+                collapsed: collapsed_path,
+                expanded: expanded_path,
+            })
+        } else {
+            None
+        };
+
+        // Convert file extensions to file suffixes
+        let file_suffixes = vscode_theme.file_extensions.clone();
+
+        // Convert file names to file stems
+        let file_stems = vscode_theme.file_names.clone();
+
+        // Convert icon definitions to file icons
+        let file_icons = if let Some(icon_definitions) = &vscode_theme.icon_definitions {
+            let mut file_icons_map = HashMap::new();
+
+            for (icon_key, icon_def) in icon_definitions {
+                if let Some(icon_path) = &icon_def.icon_path {
+                    // Skip directory icons as they're handled separately
+                    let folder_key = vscode_theme.folder.as_deref().unwrap_or("_folder");
+                    let folder_expanded_key = vscode_theme.folder_expanded.as_deref().unwrap_or("_folder-open");
+
+                    if icon_key != folder_key && icon_key != folder_expanded_key {
+                        // Convert icon key to a more generic name (remove leading underscore if present)
+                        let logical_name = if let Some(stripped) = icon_key.strip_prefix('_') {
+                            stripped.to_string()
+                        } else {
+                            icon_key.clone()
+                        };
+
+                        file_icons_map.insert(
+                            logical_name,
+                            FileIcon {
+                                path: icon_path.clone(),
+                            },
+                        );
+                    }
+                }
+            }
+
+            if file_icons_map.is_empty() {
+                None
+            } else {
+                Some(file_icons_map)
+            }
+        } else {
+            None
+        };
+
+        ZedIconTheme {
+            name,
+            appearance,
+            directory_icons,
+            file_stems,
+            file_suffixes,
+            file_icons,
+        }
     }
 }
 
@@ -457,5 +537,94 @@ mod tests {
         assert!(paths.contains(&"./icons/file.svg".to_string()));
         assert!(paths.contains(&"./icons/folder.svg".to_string()));
         assert!(paths.contains(&"./icons/folder-open.svg".to_string()));
+    }
+
+    #[test]
+    fn test_vscode_to_zed_conversion() {
+        use crate::vscode::{IconDefinition, VsCodeIconTheme};
+        use std::collections::HashMap;
+
+        // Create a VSCode icon theme
+        let mut icon_definitions = HashMap::new();
+        icon_definitions.insert(
+            "_file".to_string(),
+            IconDefinition {
+                icon_path: Some("./icons/file.svg".to_string()),
+                font_color: None,
+                font_size: None,
+                font_character: None,
+                font_id: None,
+            },
+        );
+        icon_definitions.insert(
+            "_folder".to_string(),
+            IconDefinition {
+                icon_path: Some("./icons/folder.svg".to_string()),
+                font_color: None,
+                font_size: None,
+                font_character: None,
+                font_id: None,
+            },
+        );
+        icon_definitions.insert(
+            "_folder-open".to_string(),
+            IconDefinition {
+                icon_path: Some("./icons/folder-open.svg".to_string()),
+                font_color: None,
+                font_size: None,
+                font_character: None,
+                font_id: None,
+            },
+        );
+
+        let mut file_extensions = HashMap::new();
+        file_extensions.insert("js".to_string(), "_file".to_string());
+        file_extensions.insert("ts".to_string(), "_file".to_string());
+
+        let mut file_names = HashMap::new();
+        file_names.insert("README.md".to_string(), "_file".to_string());
+
+        let vscode_theme = VsCodeIconTheme {
+            icon_definitions: Some(icon_definitions),
+            file: Some("_file".to_string()),
+            folder: Some("_folder".to_string()),
+            folder_expanded: Some("_folder-open".to_string()),
+            root_folder: None,
+            root_folder_expanded: None,
+            file_names: Some(file_names),
+            file_extensions: Some(file_extensions),
+            folder_names: None,
+            folder_names_expanded: None,
+            language_ids: None,
+            hides_explorer_arrows: None,
+            show_language_mode_icons: None,
+            source_path: None,
+        };
+
+        // Convert to Zed theme
+        let zed_theme = ZedIconTheme::from(vscode_theme);
+
+        // Verify conversion
+        assert_eq!(zed_theme.name, "Converted Icon Theme");
+        assert_eq!(zed_theme.appearance, "dark");
+
+        // Check directory icons
+        let dir_icons = zed_theme.directory_icons.expect("Should have directory icons");
+        assert_eq!(dir_icons.collapsed, "./icons/folder.svg");
+        assert_eq!(dir_icons.expanded, "./icons/folder-open.svg");
+
+        // Check file suffixes
+        let file_suffixes = zed_theme.file_suffixes.expect("Should have file suffixes");
+        assert_eq!(file_suffixes.get("js"), Some(&"_file".to_string()));
+        assert_eq!(file_suffixes.get("ts"), Some(&"_file".to_string()));
+
+        // Check file stems
+        let file_stems = zed_theme.file_stems.expect("Should have file stems");
+        assert_eq!(file_stems.get("README.md"), Some(&"_file".to_string()));
+
+        // Check file icons
+        let file_icons = zed_theme.file_icons.expect("Should have file icons");
+        assert!(file_icons.contains_key("file"));
+        assert_eq!(file_icons.get("file").unwrap().path, "./icons/file.svg");
     }
 }
