@@ -101,8 +101,8 @@ fn handle_vscode_extension(fname: String) -> Result<(), ThemeError> {
 
     log::info!("✓ Loaded VSCode theme extension: {fname}");
     log::debug!("Theme details:");
-    log::debug!("  - Name: {}", vscode.metadata().name());
-    log::debug!("  - Themes in extension: {}", vscode.metadata().themes().len());
+    log::debug!("  - Name: {}", vscode.manifest().name());
+    log::debug!("  - Themes in extension: {}", vscode.manifest().themes().len());
 
     let converted = ZedExtension::from(vscode);
     converted.write()?;
@@ -117,9 +117,9 @@ fn handle_zed_extension(fname: String) -> Result<(), ThemeError> {
     // print a lot only in this case
     log::info!("✓ Loaded Zed theme extension: {fname}");
     log::debug!("Theme details:");
-    log::debug!("  - Name: {}", zed.metadata().name());
-    log::debug!("  - Authors: {:#?}", zed.metadata().authors());
-    log::debug!("  - Themes in extension: {}", zed.metadata().themes().len());
+    log::debug!("  - Name: {}", zed.manifest().name());
+    log::debug!("  - Authors: {:#?}", zed.manifest().authors());
+    log::debug!("  - Themes in extension: {}", zed.manifest().themes().len());
 
     let converted = VsCodeExtension::from(zed);
     converted.write()?;

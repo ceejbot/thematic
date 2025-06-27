@@ -187,9 +187,11 @@ pub mod utils {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::fs;
+
     use tempfile::TempDir;
+
+    use super::*;
 
     fn setup_test_dirs() -> (TempDir, TempDir) {
         let source_dir = TempDir::new().expect("Failed to create temp source dir");

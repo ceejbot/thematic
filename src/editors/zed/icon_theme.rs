@@ -6,9 +6,10 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+use crate::ThemeError;
 use crate::editors::ThemeFile;
 use crate::icon_files::IconFileManager;
-use crate::{ThemeError, vscode::VsCodeIconTheme};
+use crate::vscode::VsCodeIconTheme;
 
 /// The schema for Zed icon themes is here:
 /// "$schema": "https://zed.dev/schema/icon_themes/v0.2.0.json
@@ -55,9 +56,11 @@ impl ZedIconThemeFamily {
     pub fn write<P: AsRef<Path>>(&self, destination: P) -> Result<(), ThemeError> {
         ThemeFile::write(self, destination)
     }
-}
 
-impl ZedIconThemeFamily {
+    pub fn themes(&self) -> &[ZedIconTheme] {
+        self.themes.as_slice()
+    }
+
     /// Create an IconFileManager from this Zed icon theme family
     ///
     /// # Arguments
@@ -129,6 +132,13 @@ pub struct FileIcon {
 }
 
 impl ZedIconTheme {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, ThemeError> {
+        let content = std::fs::read_to_string(path)?;
+        let theme: Self = serde_json::from_str(&content)?;
+        // TODO we should do more with the icons, probably
+        Ok(theme)
+    }
+
     pub fn write<P: AsRef<Path>>(&self, destination: P) -> Result<(), ThemeError> {
         let content = serde_json::to_string_pretty(self)?;
         std::fs::write(destination, content)?;
@@ -204,10 +214,42 @@ impl ZedIconTheme {
     }
 }
 
+impl ThemeFile for ZedIconTheme {
+    type T = ZedIconTheme;
+
+    fn read<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError> {
+        let content = std::fs::read_to_string(&path)?;
+        let theme: ZedIconTheme = serde_json::from_str(&content)?;
+        Ok(theme)
+    }
+
+    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+        let content = serde_json::to_string_pretty(self)?;
+        std::fs::write(path, content)?;
+        Ok(())
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self::T, ThemeError> {
+        Ok(serde_json::from_slice::<ZedIconTheme>(bytes)?)
+    }
+}
+
 impl From<VsCodeIconTheme> for ZedIconTheme {
     fn from(vscode_theme: VsCodeIconTheme) -> Self {
-        // Create a default theme name if none is available
-        let name = "Converted Icon Theme".to_string();
+        ZedIconTheme::from(&vscode_theme)
+    }
+}
+
+impl From<&VsCodeIconTheme> for ZedIconTheme {
+    fn from(vscode_theme: &VsCodeIconTheme) -> Self {
+        ZedIconTheme::from_vscode_with_name(vscode_theme, "Converted Icon Theme")
+    }
+}
+
+impl ZedIconTheme {
+    /// Create a ZedIconTheme from a VsCodeIconTheme with a custom name
+    pub fn from_vscode_with_name(vscode_theme: &VsCodeIconTheme, name: &str) -> Self {
+        let name = name.to_string();
 
         // Determine appearance based on common dark theme indicators
         let appearance = "dark".to_string(); // Default to dark, could be made smarter
@@ -293,9 +335,8 @@ impl From<VsCodeIconTheme> for ZedIconTheme {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Extension, ZedExtension};
-
     use super::*;
+    use crate::{Extension, ZedExtension};
 
     #[test]
     fn can_read_rose_pine_icons() {
@@ -444,6 +485,7 @@ mod tests {
     #[test]
     fn can_create_icon_manager() {
         use std::fs;
+
         use tempfile::TempDir;
 
         // Create temp directories
@@ -541,8 +583,9 @@ mod tests {
 
     #[test]
     fn test_vscode_to_zed_conversion() {
-        use crate::vscode::{IconDefinition, VsCodeIconTheme};
         use std::collections::HashMap;
+
+        use crate::vscode::{IconDefinition, VsCodeIconTheme};
 
         // Create a VSCode icon theme
         let mut icon_definitions = HashMap::new();
@@ -602,7 +645,7 @@ mod tests {
         };
 
         // Convert to Zed theme
-        let zed_theme = ZedIconTheme::from(vscode_theme);
+        let zed_theme = ZedIconTheme::from(&vscode_theme);
 
         // Verify conversion
         assert_eq!(zed_theme.name, "Converted Icon Theme");

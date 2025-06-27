@@ -165,21 +165,14 @@ impl VsCodeIconTheme {
     }
 }
 
-impl From<ZedIconThemeFamily> for Vec<VsCodeIconTheme> {
-    fn from(zed_family: ZedIconThemeFamily) -> Self {
-        let mut vscode_themes = Vec::new();
-
-        for zed_theme in zed_family.themes {
-            let vscode_theme = VsCodeIconTheme::from(zed_theme);
-            vscode_themes.push(vscode_theme);
-        }
-
-        vscode_themes
+impl From<&ZedIconThemeFamily> for Vec<VsCodeIconTheme> {
+    fn from(zed_family: &ZedIconThemeFamily) -> Self {
+        zed_family.themes().iter().map(VsCodeIconTheme::from).collect()
     }
 }
 
-impl From<ZedIconTheme> for VsCodeIconTheme {
-    fn from(zed_theme: ZedIconTheme) -> Self {
+impl From<&ZedIconTheme> for VsCodeIconTheme {
+    fn from(zed_theme: &ZedIconTheme) -> Self {
         let mut icon_definitions = HashMap::new();
         let mut file_extensions = HashMap::new();
         let mut file_names = HashMap::new();
@@ -383,6 +376,7 @@ mod tests {
     #[test]
     fn can_create_icon_manager() {
         use std::fs;
+
         use tempfile::TempDir;
 
         // Create temp directories
@@ -504,8 +498,9 @@ mod tests {
 
     #[test]
     fn test_zed_to_vscode_conversion() {
-        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme};
         use std::collections::HashMap;
+
+        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme};
 
         // Create test file icons
         let mut file_icons = HashMap::new();
@@ -545,7 +540,7 @@ mod tests {
         };
 
         // Convert to VSCode theme
-        let vscode_theme = VsCodeIconTheme::from(zed_theme);
+        let vscode_theme = VsCodeIconTheme::from(&zed_theme);
 
         // Verify conversion
         let icon_definitions = vscode_theme.icon_definitions.expect("Should have icon definitions");
@@ -590,8 +585,9 @@ mod tests {
 
     #[test]
     fn test_zed_family_to_vscode_themes_conversion() {
-        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme, ZedIconThemeFamily};
         use std::collections::HashMap;
+
+        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme, ZedIconThemeFamily};
 
         // Create first theme
         let mut file_icons_1 = HashMap::new();
@@ -651,7 +647,7 @@ mod tests {
         };
 
         // Convert to VSCode themes
-        let vscode_themes = Vec::<VsCodeIconTheme>::from(zed_family);
+        let vscode_themes = Vec::<VsCodeIconTheme>::from(&zed_family);
 
         // Should have 2 themes
         assert_eq!(vscode_themes.len(), 2);
@@ -677,10 +673,12 @@ mod tests {
 
     #[test]
     fn test_conversion_with_file_copying() {
-        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme, ZedIconThemeFamily};
         use std::collections::HashMap;
         use std::fs;
+
         use tempfile::TempDir;
+
+        use crate::zed::{DirectoryIcons, FileIcon, ZedIconTheme, ZedIconThemeFamily};
 
         // Create temp directories for source and destination
         let source_dir = TempDir::new().expect("Failed to create temp source dir");
@@ -737,7 +735,7 @@ mod tests {
         icon_manager.copy_icons().expect("Should copy icons successfully");
 
         // Convert to VSCode themes
-        let vscode_themes = Vec::<VsCodeIconTheme>::from(zed_family);
+        let vscode_themes = Vec::<VsCodeIconTheme>::from(&zed_family);
         assert_eq!(vscode_themes.len(), 1);
 
         // Verify the conversion worked
@@ -769,7 +767,7 @@ mod tests {
             serde_json::from_str(data.as_str()).expect("We expect to be able to parse the icon theme json file.");
 
         // Convert to Zed theme
-        let zed_theme = ZedIconTheme::from(vscode_theme);
+        let zed_theme = ZedIconTheme::from(&vscode_theme);
 
         // Verify basic conversion worked
         assert_eq!(zed_theme.name, "Converted Icon Theme");
@@ -795,7 +793,7 @@ mod tests {
         assert!(file_stems.contains_key("_pinecone-color-theme.json"));
 
         // Test round-trip conversion back to VSCode
-        let round_trip_vscode = VsCodeIconTheme::from(zed_theme.clone());
+        let round_trip_vscode = VsCodeIconTheme::from(&zed_theme);
 
         // Verify we still have icon definitions
         let icon_definitions = round_trip_vscode

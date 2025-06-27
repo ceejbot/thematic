@@ -13,6 +13,22 @@ use crate::{ThemeError, VsCodeTheme, ZedManifest, ZedTheme, ZedThemeFamily};
 
 const FIXTURES_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
+/// Helper to create a unique temporary directory
+fn create_temp_dir(test_name: &str) -> Result<PathBuf, std::io::Error> {
+    let mut temp_path = std::env::temp_dir();
+    temp_path.push(format!("thematic_test_{}_{}", test_name, std::process::id()));
+    fs::create_dir_all(&temp_path)?;
+    Ok(temp_path)
+}
+
+/// Helper to clean up temporary directory
+fn cleanup_temp_dir(path: &PathBuf) -> Result<(), std::io::Error> {
+    if path.exists() {
+        fs::remove_dir_all(path)?;
+    }
+    Ok(())
+}
+
 /// Helper to get fixture path
 fn fixture_path(relative_path: &str) -> PathBuf {
     let mut path = PathBuf::from(FIXTURES_DIR);
@@ -43,7 +59,7 @@ fn vscode_to_zed_rose_pine_conversion() -> Result<(), ThemeError> {
     // Verify the extension has correct metadata
     assert!(!zed_extension.name().is_empty(), "Extension should have a name");
     assert!(
-        !zed_extension.metadata().themes().is_empty(),
+        !zed_extension.manifest().themes().is_empty(),
         "Extension should reference theme files"
     );
 
@@ -102,9 +118,10 @@ fn zed_rose_pine_manifest() {
 }
 
 #[test]
-fn zed_to_vscode_rose_pine_conversion() -> Result<(), ThemeError> {
+fn zed_to_vscode_rose_pine_conversion() {
     // Load VSCode Rose Pine Moon extension fixture
-    let zed_extension = ZedExtension::find_from_name("rose-pine", "./fixtures/zed")?;
+    let zed_extension =
+        ZedExtension::find_from_name("rose-pine", "./fixtures/zed").expect("rose pine fixture should be findable");
     // Convert to VSCode extension
     let vscode_extension = VsCodeExtension::from((*zed_extension).clone());
 
@@ -116,12 +133,12 @@ fn zed_to_vscode_rose_pine_conversion() -> Result<(), ThemeError> {
         "names should be identical"
     );
     assert_eq!(
-        zed_extension.metadata().themes().len(),
-        vscode_extension.metadata().themes().len(),
+        zed_extension.manifest().themes().len(),
+        vscode_extension.manifest().themes().len(),
         "vscode version should have the same number of theme variants"
     );
     assert_eq!(
-        vscode_extension.metadata().themes().len(),
+        vscode_extension.manifest().themes().len(),
         3,
         "we expected three theme variants"
     );
@@ -162,14 +179,13 @@ fn zed_to_vscode_rose_pine_conversion() -> Result<(), ThemeError> {
             "Should have editor background color"
         );
     }
-
-    Ok(())
 }
 
 #[test]
-fn round_trip_vscode_to_zed_to_vscode() -> Result<(), ThemeError> {
+fn round_trip_vscode_to_zed_to_vscode() {
     // Load original VSCode theme
-    let original_vscode = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")?;
+    let original_vscode = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+        .expect("vscode rose pine fixture should be findable");
 
     // Convert to Zed
     let zed_extension = ZedExtension::from(&original_vscode);
@@ -205,14 +221,13 @@ fn round_trip_vscode_to_zed_to_vscode() -> Result<(), ThemeError> {
             }
         }
     }
-
-    Ok(())
 }
 
 #[test]
-fn round_trip_zed_to_vscode_to_zed() -> Result<(), ThemeError> {
+fn round_trip_zed_to_vscode_to_zed() {
     // Load original Zed theme
-    let original_zed_family = read_zed_fixture("zed/rose-pine-theme/themes/rose-pine-moon.json")?;
+    let original_zed_family = read_zed_fixture("zed/rose-pine-theme/themes/rose-pine-moon.json")
+        .expect("zed rose pine fixture should be findable");
     let original_zed = &original_zed_family.themes[0];
 
     // Convert to VSCode
@@ -238,15 +253,14 @@ fn round_trip_zed_to_vscode_to_zed() -> Result<(), ThemeError> {
             "Background styles should be preserved"
         );
     }
-
-    Ok(())
 }
 
 #[test]
-fn fixture_consistency() -> Result<(), ThemeError> {
+fn fixture_consistency() {
     // Load both VSCode and Zed versions of Rose Pine Moon
-    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")?;
-    let zed_family = read_zed_fixture("zed/rose-pine-theme/themes/rose-pine-moon.json")?;
+    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+        .expect("fixtures should work");
+    let zed_family = read_zed_fixture("zed/rose-pine-theme/themes/rose-pine-moon.json").expect("fixtures should work");
 
     // Find the moon theme in the Zed family
     let zed_moon = zed_family
@@ -274,20 +288,19 @@ fn fixture_consistency() -> Result<(), ThemeError> {
         (zed_name_lower.contains("rose") || zed_name_lower.contains("rosé")) && zed_name_lower.contains("pine"),
         "Zed theme name should contain 'rose/rosé pine'"
     );
-
-    Ok(())
 }
 
 #[test]
-fn extension_serialization() -> Result<(), ThemeError> {
+fn extension_serialization() {
     // Load VSCode theme and convert to Zed
-    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")?;
+    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+        .expect("fixtures should work");
     let zed_extension = ZedExtension::from(&vscode_theme);
 
     // Test that the extension has the right structure
     assert!(!zed_extension.name().is_empty(), "Extension should have a name");
     assert_eq!(
-        zed_extension.metadata().themes().len(),
+        zed_extension.manifest().themes().len(),
         1,
         "Should have exactly one theme reference"
     );
@@ -297,72 +310,101 @@ fn extension_serialization() -> Result<(), ThemeError> {
     let zed_theme = &themes[0];
 
     // Serialize the theme to check it's valid JSON
-    let theme_json = serde_json::to_string_pretty(zed_theme)?;
+    let theme_json = serde_json::to_string_pretty(zed_theme).expect("fixtures should work");
     assert!(!theme_json.is_empty(), "Theme should serialize to non-empty JSON");
 
     // Verify we can deserialize it back
-    let _deserialized: ZedTheme = serde_json::from_str(&theme_json)?;
-
-    Ok(())
-}
-
-/// Helper to create a unique temporary directory
-fn create_temp_dir(test_name: &str) -> Result<PathBuf, std::io::Error> {
-    let mut temp_path = std::env::temp_dir();
-    temp_path.push(format!("thematic_test_{}_{}", test_name, std::process::id()));
-    fs::create_dir_all(&temp_path)?;
-    Ok(temp_path)
-}
-
-/// Helper to clean up temporary directory
-fn cleanup_temp_dir(path: &PathBuf) -> Result<(), std::io::Error> {
-    if path.exists() {
-        fs::remove_dir_all(path)?;
-    }
-    Ok(())
+    let _deserialized: ZedTheme = serde_json::from_str(&theme_json).expect("fixtures should work");
 }
 
 #[test]
 fn vscode_to_zed_file_writing() -> Result<(), ThemeError> {
-    let temp_dir = create_temp_dir("vscode_to_zed").expect("Failed to create temp directory");
+    let temp_dir = create_temp_dir("vscode_to_zed_write").expect("Failed to create temp directory");
 
-    let vscode_ext = VsCodeExtension::find_from_name("rose-pine", "./fixtures/vscode/")?;
-    let mut zed_extension = ZedExtension::from((*vscode_ext).clone());
+    let original_vscode = VsCodeExtension::read_from_path(
+        "fixtures/vscode/mvllow.rose-pine-2.14.0/package.json".into(),
+        "unused".to_string(),
+    )
+    .expect("test fixtures should be readable");
+    let _theme_count = original_vscode.manifest().themes().len();
+    let zed_extension = ZedExtension::from((*original_vscode).clone());
 
-    // Override the directory to our temp directory
-    let extension_name = format!("rose-pine-moon-{}", std::process::id());
+    // Debug: Check icon theme conversion
+    eprintln!(
+        "Original VSCode extension icon themes: {}",
+        original_vscode.icon_themes().len()
+    );
+    for (i, icon_theme) in original_vscode.icon_themes().iter().enumerate() {
+        eprintln!("  VSCode icon theme {}: source_path = {:?}", i, icon_theme.source_path);
+    }
+
+    eprintln!(
+        "Converted Zed extension icon themes: {}",
+        zed_extension.icon_themes().len()
+    );
+    for (i, icon_theme) in zed_extension.icon_themes().iter().enumerate() {
+        eprintln!("  Zed icon theme {}: name = {}", i, icon_theme.name);
+    }
+
+    // Step 3: Check Zed theme briefly
+    assert_eq!(
+        zed_extension.name(),
+        original_vscode.name(),
+        "Zed theme name should match original"
+    );
+    assert_eq!(
+        zed_extension.families().len(),
+        3,
+        "we expected 3 families for rose pine"
+    );
+    assert_eq!(
+        zed_extension.manifest().icon_themes().len(),
+        1,
+        "we expected one icon theme"
+    );
+
+    let extension_name = format!("rose-pine-moon-zed-{}", std::process::id());
     let mut extension_dir = temp_dir.clone();
     extension_dir.push(&extension_name);
+    fs::create_dir_all(&extension_dir).expect("Failed to create tmp extensions directory");
 
-    // Create the extension directory structure
-    fs::create_dir_all(&extension_dir).expect("Failed to create extension directory");
-    let mut themes_dir = extension_dir.clone();
-    themes_dir.push("themes");
-    fs::create_dir_all(&themes_dir).expect("Failed to create themes directory");
+    // Write the zed extension out.
+    eprintln!("Writing Zed extension to: {}", extension_dir.display());
+    zed_extension
+        .write_to(&extension_dir)
+        .expect("we should be able to write the converted zed extension");
 
-    // write our zed extension in this temp directory
-    zed_extension.directory = extension_dir.clone();
-    let result = zed_extension.write();
-    assert!(result.is_ok(), "we expect to write successfully");
+    // Check that the files we expect to see all exist.
+    let mut filetest = extension_dir.clone();
+    filetest.push("extension.toml");
+    eprintln!("{}", filetest.display());
+    assert!(std::fs::exists(&filetest)?, "expected extension.toml to exist");
+    filetest.pop();
+    filetest.push("themes/rose-pine.json");
+    assert!(std::fs::exists(&filetest)?, "rose-pine.json family should exist");
+    filetest.pop();
+    filetest.push("rose-pine-dawn.json");
+    assert!(std::fs::exists(&filetest)?, "rose-pine-dawn.json family should exist");
+    filetest.pop();
+    filetest.push("rose-pine-moon.json");
+    assert!(std::fs::exists(&filetest)?, "rose-pine-moon.json family should exist");
+    filetest.pop();
+    filetest.pop();
 
-    // now let's read the extension back in
-    extension_dir.push("extension.toml");
-    let zed_written = ZedExtension::read_from_path(&extension_dir, "unused".to_string())?;
-    assert_eq!(zed_written.name(), zed_extension.name());
-    assert_eq!(zed_written.metadata(), zed_extension.metadata());
+    // Now we test that the icons got written out.
+    filetest.push("icon_themes/rose-pine-icons.json");
+    assert!(std::fs::exists(&filetest)?, "rose-pine-icons.json should exist");
 
-    // Clean up
     cleanup_temp_dir(&temp_dir).expect("Failed to cleanup temp directory");
-
     Ok(())
 }
 
 #[test]
-fn zed_to_vscode_file_writing() -> Result<(), ThemeError> {
+fn zed_to_vscode_file_writing() {
     let temp_dir = create_temp_dir("zed_to_vscode").expect("Failed to create temp directory");
 
     // Load Zed theme and convert to VSCode
-    let zed_family = read_zed_fixture("zed/rose-pine-theme/themes/rose-pine-moon.json")?;
+    let zed_family = read_zed_fixture("zed/rose-pine-theme/themes/rose-pine-moon.json").expect("fixtures should work");
     let vscode_extension = VsCodeExtension::from(zed_family);
 
     // Create extension directory
@@ -377,26 +419,25 @@ fn zed_to_vscode_file_writing() -> Result<(), ThemeError> {
     fs::create_dir_all(&themes_dir).expect("Failed to create themes directory");
 
     // Get metadata before consuming the extension
-    let metadata = vscode_extension.metadata().clone();
-
+    let metadata = vscode_extension.manifest().clone();
     // Write theme files
     let themes = vscode_extension.themes();
-    for theme in &themes {
+    for theme in themes {
         let mut theme_file = themes_dir.clone();
         theme_file.push(format!("{}.json", slug::slugify(&theme.name)));
-        let theme_json = serde_json::to_string_pretty(theme)?;
+        let theme_json = serde_json::to_string_pretty(theme).expect("theme should be serializable");
         fs::write(&theme_file, theme_json).expect("Failed to write theme file");
 
         // Verify the file exists and can be read back
         assert!(theme_file.exists(), "Theme file should be created");
-        let read_back_theme = VsCodeTheme::read(&theme_file)?;
+        let read_back_theme = VsCodeTheme::read(&theme_file).expect("should be able to read a theme file we wrote");
         assert_eq!(read_back_theme.name, theme.name, "Read back theme name should match");
     }
 
     // Write package.json
     let mut package_file = extension_dir.clone();
     package_file.push("package.json");
-    let package_json = serde_json::to_string_pretty(&metadata)?;
+    let package_json = serde_json::to_string_pretty(&metadata).expect("manifest should be serializable");
     fs::write(&package_file, package_json).expect("Failed to write package.json");
 
     // Verify package.json exists
@@ -404,8 +445,6 @@ fn zed_to_vscode_file_writing() -> Result<(), ThemeError> {
 
     // Clean up
     cleanup_temp_dir(&temp_dir).expect("Failed to cleanup temp directory");
-
-    Ok(())
 }
 
 #[test]
@@ -418,7 +457,7 @@ fn full_round_trip_with_files() {
         "unused".to_string(),
     )
     .expect("test fixtures should be readable");
-    let theme_count = original_vscode.metadata().themes().len();
+    let theme_count = original_vscode.manifest().themes().len();
     // Step 2: Convert to Zed and write to temp directory
     let zed_extension = ZedExtension::from((*original_vscode).clone());
 
@@ -438,7 +477,7 @@ fn full_round_trip_with_files() {
     let mut round_trip_vscode = VsCodeExtension::from(zed_extension);
     assert_eq!(
         theme_count,
-        round_trip_vscode.metadata().themes().len(),
+        round_trip_vscode.manifest().themes().len(),
         "roundtrip back from zed lost themes!"
     );
     eprintln!("extdir={}", extension_dir.display());
@@ -458,8 +497,8 @@ fn full_round_trip_with_files() {
         "Round trip VSCode theme name should match original"
     );
     assert_eq!(
-        read_vscode_theme.metadata().themes().len(),
-        original_vscode.metadata().themes().len(),
+        read_vscode_theme.manifest().themes().len(),
+        original_vscode.manifest().themes().len(),
         "Theme metadata should be preserved through full round trip"
     );
     assert_eq!(
@@ -473,22 +512,23 @@ fn full_round_trip_with_files() {
 }
 
 #[test]
-fn metadata_preservation() -> Result<(), ThemeError> {
+fn metadata_preservation() {
     // Load VSCode theme
-    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")?;
+    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+        .expect("fixtures should work");
 
     // Convert to Zed extension
     let zed_extension = ZedExtension::from(&vscode_theme);
 
     // Check that metadata is properly constructed
-    let metadata = zed_extension.metadata();
+    let metadata = zed_extension.manifest();
     assert!(!metadata.name().is_empty(), "Extension should have a name");
     assert!(!metadata.id().is_empty(), "Extension should have an ID");
     assert!(!metadata.themes().is_empty(), "Extension should list its themes");
 
     // Convert back to VSCode
     let vscode_extension = VsCodeExtension::from(zed_extension);
-    let vs_metadata = vscode_extension.metadata();
+    let vs_metadata = vscode_extension.manifest();
 
     assert!(!vs_metadata.name().is_empty(), "VSCode extension should have a name");
     assert!(
@@ -499,8 +539,6 @@ fn metadata_preservation() -> Result<(), ThemeError> {
         !vs_metadata.themes().is_empty(),
         "VSCode extension should contribute themes"
     );
-
-    Ok(())
 }
 
 /// Helper to compare theme colors (allowing for small differences in color conversion)
@@ -512,9 +550,10 @@ fn colors_approximately_equal(color1: &str, color2: &str) -> bool {
 }
 
 #[test]
-fn specific_color_preservation() -> Result<(), ThemeError> {
+fn specific_color_preservation() {
     // Load VSCode theme
-    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")?;
+    let vscode_theme = read_vscode_fixture("vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+        .expect("fixtures should work");
 
     // Extract some key colors before conversion
     let original_bg = vscode_theme
@@ -544,8 +583,6 @@ fn specific_color_preservation() -> Result<(), ThemeError> {
             );
         }
     }
-
-    Ok(())
 }
 
 #[test]

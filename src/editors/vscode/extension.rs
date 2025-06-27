@@ -10,7 +10,7 @@ use glob::glob;
 
 use super::{Contributions, Repository, ThemePointer, VsCodePackageJson, VsCodeTheme};
 use crate::editors::{Extension, ThemeFile, ZedExtension};
-use crate::{ThemeError, ZedThemeFamily, find_extension_name};
+use crate::{IconThemePointer, ThemeError, VsCodeIconTheme, ZedThemeFamily, find_extension_name};
 
 static EXTENSION_DIR: &str = ".vscode/extensions";
 
@@ -24,7 +24,8 @@ pub struct VsCodeExtension {
     pub(crate) directory: PathBuf,
     name: String,
     themes: Vec<VsCodeTheme>,
-    metadata: VsCodePackageJson,
+    icon_themes: Vec<VsCodeIconTheme>,
+    manifest: VsCodePackageJson,
 }
 
 impl VsCodeExtension {
@@ -60,6 +61,8 @@ impl VsCodeExtension {
             // Cool. We can use the metadata to build our extension
             return VsCodeExtension::from_metadata(extpath, metadata);
         }
+
+        // TODO consider if we want to do this at all
 
         log::debug!("Falling back to reading loose color theme json files.");
         // read all .json files in this directory and build a list of the ones that are valid themes
@@ -129,8 +132,9 @@ impl VsCodeExtension {
         let extension = VsCodeExtension {
             name: barename.to_owned(),
             directory: extpath,
+            icon_themes: Vec::new(), // TODO
             themes,
-            metadata,
+            manifest: metadata,
         };
 
         Ok(Box::new(extension))
@@ -156,11 +160,23 @@ impl VsCodeExtension {
             })
             .collect();
 
+        let icon_themes: Vec<_> = metadata
+            .contributes
+            .icon_themes
+            .iter()
+            .filter_map(|xs| {
+                let mut themepath = extpath.clone();
+                themepath.push(&xs.path);
+                VsCodeIconTheme::read(&themepath).ok()
+            })
+            .collect();
+
         let extension = VsCodeExtension {
             name: metadata.display_name.clone(),
             directory: found,
             themes,
-            metadata,
+            icon_themes,
+            manifest: metadata,
         };
 
         Ok(Box::new(extension))
@@ -208,7 +224,8 @@ impl VsCodeExtension {
             directory,
             name,
             themes,
-            metadata,
+            manifest: metadata,
+            icon_themes: Vec::new(),
         }
     }
 
@@ -233,7 +250,8 @@ impl VsCodeExtension {
 
 impl Extension for VsCodeExtension {
     type ThemeType = VsCodeTheme;
-    type Metadata = VsCodePackageJson;
+    type IconThemeType = VsCodeIconTheme;
+    type Manifest = VsCodePackageJson;
 
     fn extensions_path() -> String {
         OFFICIAL_DIR.clone()
@@ -244,7 +262,12 @@ impl Extension for VsCodeExtension {
     }
 
     fn write(&self) -> Result<(), ThemeError> {
-        let mut workdir = PathBuf::from(&self.directory);
+        self.write_to(self.official_path())
+    }
+
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+        let mut workdir = PathBuf::new();
+        workdir.push(path);
         workdir.push("themes");
         std::fs::create_dir_all(&workdir)?;
 
@@ -257,7 +280,7 @@ impl Extension for VsCodeExtension {
         }
 
         workdir.pop();
-        let package_bytes = serde_json::to_vec_pretty(self.metadata())?;
+        let package_bytes = serde_json::to_vec_pretty(self.manifest())?;
         workdir.push("package.json");
         let mut fp = std::fs::File::create(&workdir)?;
         fp.write_all(package_bytes.as_slice())?;
@@ -279,25 +302,30 @@ impl Extension for VsCodeExtension {
         &self.directory
     }
 
-    fn metadata(&self) -> &VsCodePackageJson {
-        &self.metadata
+    fn manifest(&self) -> &VsCodePackageJson {
+        &self.manifest
     }
 
-    /// Consumes themes; use when converting.
-    fn themes(self) -> Vec<VsCodeTheme> {
-        self.themes
+    /// Themes as slice
+    fn themes(&self) -> &[VsCodeTheme] {
+        self.themes.as_slice()
+    }
+
+    /// Themes as slice
+    fn icon_themes(&self) -> &[VsCodeIconTheme] {
+        self.icon_themes.as_slice()
     }
 }
 
 impl From<ZedExtension> for VsCodeExtension {
     fn from(input: ZedExtension) -> Self {
         let name = input.name().to_owned();
-        let display_name = input.metadata().name().to_owned();
-        let description = input.metadata().description().to_owned();
-        let publisher = input.metadata().authors().join(", ");
-        let repository = input.metadata().repository().to_owned();
+        let display_name = input.manifest().name().to_owned();
+        let description = input.manifest().description().to_owned();
+        let publisher = input.manifest().authors().join(", ");
+        let repository = input.manifest().repository().to_owned();
         let directory =
-            VsCodeExtension::build_official_path(input.metadata().id(), VsCodeExtension::extensions_path().as_str());
+            VsCodeExtension::build_official_path(input.manifest().id(), VsCodeExtension::extensions_path().as_str());
         let families = input.families().to_owned();
 
         let themes = input.themes();
@@ -318,8 +346,24 @@ impl From<ZedExtension> for VsCodeExtension {
                 }
             })
             .collect();
+
+        let theme_pairs: Vec<_> = input
+            .icon_themes()
+            .iter()
+            .map(|xs| {
+                let pointer = IconThemePointer {
+                    id: slug::slugify(xs.name.as_str()),
+                    label: xs.name.clone(),
+                    path: "./icons".to_string(), // TODO do vscode extensions ever have more than one icon set?
+                };
+                let vsi = VsCodeIconTheme::from(xs);
+                (vsi, pointer)
+            })
+            .collect();
+        let (icon_themes, icon_theme_pointers): (Vec<_>, Vec<_>) = theme_pairs.into_iter().unzip();
+
         let contributes = Contributions {
-            icon_themes: Vec::new(),
+            icon_themes: icon_theme_pointers,
             themes: theme_pointers,
         };
 
@@ -344,7 +388,8 @@ impl From<ZedExtension> for VsCodeExtension {
             directory: directory.into(),
             name,
             themes,
-            metadata,
+            icon_themes,
+            manifest: metadata,
         }
     }
 }

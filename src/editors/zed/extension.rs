@@ -5,11 +5,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use glob::glob;
-use serde::{Deserialize, Serialize};
 
 use crate::editors::{Extension, ThemeFile};
 use crate::vscode::VsCodeExtension;
-use crate::{ThemeError, VsCodeTheme, ZedTheme, ZedThemeFamily};
+use crate::{ThemeError, VsCodeTheme, ZedIconTheme, ZedManifest, ZedTheme, ZedThemeFamily};
 
 static EXTENSION_DIR: &str = "Library/Application Support/Zed/extensions/installed";
 
@@ -24,6 +23,10 @@ pub struct ZedExtension {
     name: String,
     /// All the theme families this extension provides.
     families: Vec<ZedThemeFamily>,
+    /// All the icon themes this extension provides.
+    icon_themes: Vec<ZedIconTheme>,
+    /// All themes flat-mapped
+    all_themes: Vec<ZedTheme>,
 }
 
 impl ZedExtension {
@@ -50,6 +53,11 @@ impl ZedExtension {
         self.families.as_slice()
     }
 
+    /// All icon themes
+    pub fn icon_themes(&self) -> &[ZedIconTheme] {
+        self.icon_themes.as_slice()
+    }
+
     pub fn read_from_path(extpath: &PathBuf, barename: String) -> Result<Box<Self>, ThemeError> {
         if extpath.ends_with("extension.toml") {
             let contents = std::fs::read_to_string(extpath)?;
@@ -70,6 +78,8 @@ impl ZedExtension {
             "./themes/{}",
             ZedExtension::normalize_name(family.name.as_str())
         )];
+        let icon_themes = Vec::new(); // TODO
+        let all_themes = family.themes.clone();
 
         let metadata = ZedManifest {
             id,
@@ -84,6 +94,8 @@ impl ZedExtension {
             name: family.name.clone(),
             directory: extpath.clone(),
             families: vec![family],
+            icon_themes,
+            all_themes,
             metadata,
         };
 
@@ -117,12 +129,24 @@ impl ZedExtension {
             extpath.pop();
         }
         let families: Vec<ZedThemeFamily> = metadata
-            .themes
+            .themes()
             .iter()
             .filter_map(|xs| {
                 let mut family_file = extpath.clone();
                 family_file.push(xs);
                 ZedThemeFamily::read(&family_file).ok()
+            })
+            .collect();
+        // lazy clone
+        let all_themes = families.iter().flat_map(|family| family.themes.clone()).collect();
+
+        let icon_themes: Vec<ZedIconTheme> = metadata
+            .icon_themes
+            .iter()
+            .filter_map(|xs| {
+                let mut itheme = extpath.clone();
+                itheme.push(xs);
+                ZedIconTheme::read(&itheme).ok()
             })
             .collect();
 
@@ -131,6 +155,8 @@ impl ZedExtension {
             directory: extpath,
             metadata,
             families,
+            icon_themes,
+            all_themes,
         };
         Ok(Box::new(extension))
     }
@@ -138,14 +164,20 @@ impl ZedExtension {
 
 impl Extension for ZedExtension {
     type ThemeType = ZedTheme;
-    type Metadata = ZedManifest;
+    type IconThemeType = ZedIconTheme;
+    type Manifest = ZedManifest;
 
     fn read(name: &str) -> Result<Box<Self>, ThemeError> {
         ZedExtension::find_from_name(name, ZedExtension::extensions_path().as_str())
     }
 
     fn write(&self) -> Result<(), ThemeError> {
-        let mut workdir = PathBuf::from(&self.directory);
+        self.write_to(self.official_path())
+    }
+
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+        let mut workdir = PathBuf::new();
+        workdir.push(path);
         workdir.push("themes");
         std::fs::create_dir_all(&workdir)?;
 
@@ -156,8 +188,25 @@ impl Extension for ZedExtension {
             family.write(filename)?;
         }
 
+        // Write icon themes if any exist
+        if !self.icon_themes.is_empty() {
+            workdir.pop();
+            workdir.push("icon_themes");
+            std::fs::create_dir_all(&workdir)?;
+
+            for icon_theme in self.icon_themes.as_slice() {
+                let mut filename = workdir.clone();
+                let icon_theme_file = ZedExtension::normalize_name(&icon_theme.name);
+                filename.push(icon_theme_file);
+                icon_theme.write(filename)?;
+
+                // TODO: Copy icon files using IconFileManager
+                // This will be implemented when we have the source path tracking
+            }
+        }
+
         workdir.pop();
-        let tomlstr = toml::to_string_pretty(self.metadata())?;
+        let tomlstr = toml::to_string_pretty(self.manifest())?;
         workdir.push("extension.toml");
         let mut fp = std::fs::File::create(&workdir)?;
         fp.write_all(tomlstr.as_bytes())?;
@@ -178,77 +227,30 @@ impl Extension for ZedExtension {
         self.name.as_str()
     }
 
-    fn themes(self) -> Vec<Self::ThemeType> {
-        self.families.into_iter().flat_map(|family| family.themes).collect()
+    /// All themes as slice
+    fn themes(&self) -> &[Self::ThemeType] {
+        self.all_themes.as_slice()
     }
 
+    /// Icon themes as slice
+    fn icon_themes(&self) -> &[ZedIconTheme] {
+        self.icon_themes.as_slice()
+    }
+
+    /// Where this extension should live, or was read from
     fn official_path(&self) -> &PathBuf {
         &self.directory
     }
 
-    fn metadata(&self) -> &Self::Metadata {
+    /// The editor's manifest for this theme.
+    fn manifest(&self) -> &Self::Manifest {
         &self.metadata
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct ZedManifest {
-    id: String,
-    name: String,
-    version: String,
-    schema_version: usize,
-    description: String,
-    repository: String,
-    authors: Vec<String>,
-    themes: Vec<String>,
-    icon_themes: Vec<String>,
-}
-
-impl Default for ZedManifest {
-    fn default() -> Self {
-        ZedManifest {
-            id: String::default(),
-            name: String::default(),
-            version: String::default(),
-            schema_version: 1,
-            description: String::default(),
-            repository: String::default(),
-            authors: Vec::new(),
-            themes: Vec::new(),
-            icon_themes: Vec::new(),
-        }
-    }
-}
-
-impl ZedManifest {
-    pub fn id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    pub fn name(&self) -> &str {
-        self.name.as_str()
-    }
-
-    pub fn description(&self) -> &str {
-        self.description.as_str()
-    }
-
-    pub fn repository(&self) -> &str {
-        self.repository.as_str()
-    }
-
-    pub fn authors(&self) -> &[String] {
-        self.authors.as_slice()
-    }
-
-    pub fn themes(&self) -> &[String] {
-        self.themes.as_slice()
     }
 }
 
 impl From<VsCodeExtension> for ZedExtension {
     fn from(extension: VsCodeExtension) -> Self {
-        let vs_meta = extension.metadata();
+        let vs_meta = extension.manifest();
         let id = vs_meta.name().to_owned();
         let display_name = vs_meta.display_name().to_owned();
         let author = vs_meta.publisher().to_owned();
@@ -257,12 +259,12 @@ impl From<VsCodeExtension> for ZedExtension {
         let authors = vec![vs_meta.publisher().to_owned()];
 
         let incoming = extension.themes();
+        let all_themes = incoming.iter().map(ZedTheme::from).collect();
 
         // Now we do our first clever thing. We group themes by name similarity
         // into Zed theme families. We then convert by family.
         let mut theme_map: HashMap<String, VsCodeTheme> = HashMap::new();
         let theme_names: Vec<String> = incoming
-            .clone()
             .iter()
             .map(|xs| {
                 let name = xs.name.clone();
@@ -297,6 +299,25 @@ impl From<VsCodeExtension> for ZedExtension {
             .map(|family| format!("./themes/{}", ZedExtension::normalize_name(family.name.as_str())))
             .collect();
 
+        let icon_themes: Vec<_> = extension
+            .icon_themes()
+            .iter()
+            .enumerate()
+            .map(|(i, vscode_icon_theme)| {
+                // Try to get the label from metadata, fallback to a default name
+                let name = vs_meta
+                    .icon_themes()
+                    .get(i)
+                    .map(|meta| meta.label.as_str())
+                    .unwrap_or("Converted Icon Theme");
+                ZedIconTheme::from_vscode_with_name(vscode_icon_theme, name)
+            })
+            .collect();
+        let icon_theme_pointers = icon_themes
+            .iter()
+            .map(|itheme| format!("./icon_themes/{}", ZedExtension::normalize_name(itheme.name.as_str())))
+            .collect();
+
         let metadata = ZedManifest {
             id,
             name: display_name.clone(),
@@ -306,7 +327,7 @@ impl From<VsCodeExtension> for ZedExtension {
             repository,
             authors,
             themes: family_pointers,
-            ..Default::default()
+            icon_themes: icon_theme_pointers,
         };
         let directory = ZedExtension::build_official_path(metadata.id.as_str(), EXTENSION_DIR);
 
@@ -315,6 +336,8 @@ impl From<VsCodeExtension> for ZedExtension {
             name: display_name,
             families,
             metadata,
+            icon_themes,
+            all_themes,
         }
     }
 }
@@ -352,12 +375,15 @@ impl From<&VsCodeTheme> for ZedExtension {
             themes,
             ..Default::default()
         };
+        let all_themes = family.themes.clone();
 
         ZedExtension {
             name: vscode_theme.name.clone(),
             directory: directory.into(),
             metadata,
             families: vec![family],
+            all_themes,
+            icon_themes: Vec::new(),
         }
     }
 }

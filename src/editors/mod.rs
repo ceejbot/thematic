@@ -12,20 +12,25 @@ use crate::ThemeError;
 
 pub trait Extension {
     type ThemeType;
-    type Metadata;
+    type IconThemeType;
+    type Manifest;
 
     /// Attempt to find and read the theme from its name.
     fn read(name: &str) -> Result<Box<Self>, ThemeError>;
-    /// Write out a minimum viable theme extension for this editor.
+    /// Write this theme extension to the default place its editor expects it.
     fn write(&self) -> Result<(), ThemeError>;
+    /// Write the theme to a specific directory.
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError>;
     /// The official extensions path for this editor.
     fn extensions_path() -> String;
     /// The human name of this extension (as opposed to theme).
     fn name(&self) -> &str;
     /// Get the extension's metadata
-    fn metadata(&self) -> &Self::Metadata;
+    fn manifest(&self) -> &Self::Manifest;
     /// Get all themes associated with this extension.
-    fn themes(self) -> Vec<Self::ThemeType>;
+    fn themes(&self) -> &[Self::ThemeType];
+    /// Get all icon themes associated with this extension.
+    fn icon_themes(&self) -> &[Self::IconThemeType];
     /// Where this extension is stored, or should be stored.
     fn official_path(&self) -> &PathBuf;
     /// Construct the path this editor type expects to find this extension in, from the name only.
