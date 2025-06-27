@@ -47,6 +47,7 @@ where
 pub struct Contributions {
     #[serde(default)]
     pub(crate) icon_themes: Vec<IconThemePointer>,
+    #[serde(default)]
     pub(crate) themes: Vec<ThemePointer>,
 }
 
@@ -95,4 +96,67 @@ pub struct IconThemePointer {
     pub(crate) label: String,
     /// The relative path to the file where the icon theme json file is.
     pub(crate) path: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_missing_themes_and_icon_themes_deserialize_to_empty_vecs() {
+        // Test JSON with missing themes field
+        let json_missing_themes = r#"
+        {
+            "name": "test-extension",
+            "displayName": "Test Extension",
+            "description": "Test",
+            "publisher": "test",
+            "contributes": {
+                "iconThemes": []
+            }
+        }
+        "#;
+
+        let manifest: VsCodePackageJson =
+            serde_json::from_str(json_missing_themes).expect("Should deserialize with missing themes field");
+
+        assert_eq!(manifest.themes().len(), 0);
+        assert_eq!(manifest.icon_themes().len(), 0);
+
+        // Test JSON with missing iconThemes field
+        let json_missing_icon_themes = r#"
+        {
+            "name": "test-extension",
+            "displayName": "Test Extension",
+            "description": "Test",
+            "publisher": "test",
+            "contributes": {
+                "themes": []
+            }
+        }
+        "#;
+
+        let manifest: VsCodePackageJson =
+            serde_json::from_str(json_missing_icon_themes).expect("Should deserialize with missing iconThemes field");
+
+        assert_eq!(manifest.themes().len(), 0);
+        assert_eq!(manifest.icon_themes().len(), 0);
+
+        // Test JSON with both fields missing
+        let json_missing_both = r#"
+        {
+            "name": "test-extension",
+            "displayName": "Test Extension",
+            "description": "Test",
+            "publisher": "test",
+            "contributes": {}
+        }
+        "#;
+
+        let manifest: VsCodePackageJson = serde_json::from_str(json_missing_both)
+            .expect("Should deserialize with both themes and iconThemes missing");
+
+        assert_eq!(manifest.themes().len(), 0);
+        assert_eq!(manifest.icon_themes().len(), 0);
+    }
 }

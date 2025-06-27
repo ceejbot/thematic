@@ -133,9 +133,51 @@ pub struct FileIcon {
 
 impl ZedIconTheme {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, ThemeError> {
-        let content = std::fs::read_to_string(path)?;
+        let content = std::fs::read_to_string(&path)?;
         let theme: Self = serde_json::from_str(&content)?;
-        // TODO we should do more with the icons, probably
+
+        // Discover and validate referenced icon files
+        let base_dir = path.as_ref().parent().unwrap_or_else(|| Path::new("."));
+        let mut missing_icons = Vec::new();
+        let mut found_icons = Vec::new();
+
+        // Check directory icons
+        if let Some(dir_icons) = &theme.directory_icons {
+            for icon_path in [&dir_icons.collapsed, &dir_icons.expanded] {
+                let full_path = base_dir.join(icon_path);
+                if full_path.exists() {
+                    found_icons.push(icon_path.clone());
+                } else {
+                    missing_icons.push(icon_path.clone());
+                }
+            }
+        }
+
+        // Check file icons
+        if let Some(file_icons) = &theme.file_icons {
+            for file_icon in file_icons.values() {
+                let full_path = base_dir.join(&file_icon.path);
+                if full_path.exists() {
+                    found_icons.push(file_icon.path.clone());
+                } else {
+                    missing_icons.push(file_icon.path.clone());
+                }
+            }
+        }
+
+        // Log findings
+        if !found_icons.is_empty() {
+            log::debug!("Found {} icon files for theme '{}'", found_icons.len(), theme.name);
+        }
+        if !missing_icons.is_empty() {
+            log::warn!(
+                "Missing {} icon files for theme '{}': {:?}",
+                missing_icons.len(),
+                theme.name,
+                missing_icons
+            );
+        }
+
         Ok(theme)
     }
 
@@ -147,7 +189,7 @@ impl ZedIconTheme {
 
     /// Track icons from this theme in the provided IconFileManager
     pub fn track_icons(&self, manager: &mut IconFileManager) -> Result<(), ThemeError> {
-        // Track directory icons
+        // Track directory icons with simple names for backward compatibility
         if let Some(dir_icons) = &self.directory_icons {
             if let Some(_filename) = IconFileManager::extract_filename(&dir_icons.collapsed) {
                 manager.track_icon("directory_collapsed".to_string(), &dir_icons.collapsed);
@@ -157,11 +199,64 @@ impl ZedIconTheme {
             }
         }
 
-        // Track file icons
+        // Track file icons with simple names
         if let Some(file_icons) = &self.file_icons {
             for (icon_type, file_icon) in file_icons {
                 if let Some(_filename) = IconFileManager::extract_filename(&file_icon.path) {
                     manager.track_icon(icon_type.clone(), &file_icon.path);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Track icons from this theme with an optional source base path
+    /// This is useful during conversion when icon paths need to be resolved relative to a source directory
+    pub fn track_icons_with_base(
+        &self,
+        manager: &mut IconFileManager,
+        source_base: Option<&std::path::Path>,
+    ) -> Result<(), ThemeError> {
+        // Track directory icons
+        if let Some(dir_icons) = &self.directory_icons {
+            if let Some(filename) = IconFileManager::extract_filename(&dir_icons.collapsed) {
+                let logical_name = format!("directory_collapsed_{}", filename);
+                if let Some(base) = source_base {
+                    let full_path = base.join(&dir_icons.collapsed);
+                    if full_path.exists() {
+                        manager.track_icon_absolute(logical_name, full_path);
+                    }
+                } else {
+                    manager.track_icon(logical_name, &dir_icons.collapsed);
+                }
+            }
+            if let Some(filename) = IconFileManager::extract_filename(&dir_icons.expanded) {
+                let logical_name = format!("directory_expanded_{}", filename);
+                if let Some(base) = source_base {
+                    let full_path = base.join(&dir_icons.expanded);
+                    if full_path.exists() {
+                        manager.track_icon_absolute(logical_name, full_path);
+                    }
+                } else {
+                    manager.track_icon(logical_name, &dir_icons.expanded);
+                }
+            }
+        }
+
+        // Track file icons
+        if let Some(file_icons) = &self.file_icons {
+            for (icon_type, file_icon) in file_icons {
+                if let Some(filename) = IconFileManager::extract_filename(&file_icon.path) {
+                    let logical_name = format!("{}_{}", icon_type, filename);
+                    if let Some(base) = source_base {
+                        let full_path = base.join(&file_icon.path);
+                        if full_path.exists() {
+                            manager.track_icon_absolute(logical_name, full_path);
+                        }
+                    } else {
+                        manager.track_icon(logical_name, &file_icon.path);
+                    }
                 }
             }
         }

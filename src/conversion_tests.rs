@@ -605,3 +605,19 @@ fn theme_type_detection() -> Result<(), ThemeError> {
 
     Ok(())
 }
+
+#[test]
+fn no_ci_material_icon_theme() {
+    // This theme does not have an associated color theme.
+    let extpath = VsCodeExtension::build_official_path(
+        "equinusocio.vsc-material-theme-icons-1.2.2",
+        VsCodeExtension::extensions_path().as_str(),
+    );
+    let mut extdir = PathBuf::from(extpath);
+    eprintln!("extdir = {}", extdir.display());
+    extdir.push("package.json");
+    let vsc_extension = VsCodeExtension::read_from_path(extdir, "unused".to_string())
+        .expect("we expect to be able to read any extension");
+
+    assert_eq!(vsc_extension.name(), "Material Theme Icons");
+}

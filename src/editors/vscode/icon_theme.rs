@@ -163,6 +163,39 @@ impl VsCodeIconTheme {
             }
         }
     }
+
+    /// Track icons from this theme in the provided IconFileManager
+    pub fn track_icons(&self, manager: &mut crate::IconFileManager) -> Result<(), crate::ThemeError> {
+        self.track_icons_with_base(manager, None)
+    }
+
+    /// Track icons from this theme with an optional source base path
+    /// This is useful during conversion when icon paths need to be resolved relative to a source directory
+    pub fn track_icons_with_base(
+        &self,
+        manager: &mut crate::IconFileManager,
+        source_base: Option<&std::path::Path>,
+    ) -> Result<(), crate::ThemeError> {
+        if let Some(icon_definitions) = &self.icon_definitions {
+            for (icon_key, icon_def) in icon_definitions {
+                if let Some(icon_path) = &icon_def.icon_path {
+                    if let Some(filename) = crate::IconFileManager::extract_filename(icon_path) {
+                        let logical_name = format!("{}_{}", icon_key, filename);
+                        if let Some(base) = source_base {
+                            let full_path = base.join(icon_path);
+                            if full_path.exists() {
+                                manager.track_icon_absolute(logical_name, full_path);
+                            }
+                        } else {
+                            manager.track_icon(logical_name, icon_path);
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl From<&ZedIconThemeFamily> for Vec<VsCodeIconTheme> {

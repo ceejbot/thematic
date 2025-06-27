@@ -10,7 +10,7 @@ use glob::glob;
 
 use super::{Contributions, Repository, ThemePointer, VsCodePackageJson, VsCodeTheme};
 use crate::editors::{Extension, ThemeFile, ZedExtension};
-use crate::{IconThemePointer, ThemeError, VsCodeIconTheme, ZedThemeFamily, find_extension_name};
+use crate::{IconFileManager, IconThemePointer, ThemeError, VsCodeIconTheme, ZedThemeFamily, find_extension_name};
 
 static EXTENSION_DIR: &str = ".vscode/extensions";
 
@@ -52,8 +52,11 @@ impl VsCodeExtension {
 
     pub fn read_from_path(extpath: PathBuf, barename: String) -> Result<Box<VsCodeExtension>, ThemeError> {
         if extpath.ends_with("package.json") {
+            eprintln!("{} ends with package.json", extpath.display());
             let contents = std::fs::read_to_string(&extpath)?;
+
             let metadata: VsCodePackageJson = serde_json::from_str(contents.as_str())?;
+            eprintln!("from_metadata() is next");
             return VsCodeExtension::from_metadata(extpath, metadata);
         }
 
@@ -267,7 +270,7 @@ impl Extension for VsCodeExtension {
 
     fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let mut workdir = PathBuf::new();
-        workdir.push(path);
+        workdir.push(&path);
         workdir.push("themes");
         std::fs::create_dir_all(&workdir)?;
 
@@ -277,6 +280,73 @@ impl Extension for VsCodeExtension {
             let mut filename = workdir.clone();
             filename.push(themefile);
             theme.write(filename)?;
+        }
+
+        // Write icon themes if any exist
+        if !self.icon_themes.is_empty() {
+            workdir.pop();
+            workdir.push("icon_themes");
+            std::fs::create_dir_all(&workdir)?;
+
+            for (i, icon_theme) in self.icon_themes.iter().enumerate() {
+                // Get the theme name from manifest, fallback to index-based name
+                let theme_name = self
+                    .manifest
+                    .icon_themes()
+                    .get(i)
+                    .map(|ptr| ptr.label.as_str())
+                    .unwrap_or("Icon Theme");
+
+                let slugged = slug::slugify(theme_name);
+                let icon_theme_file = format!("{slugged}.json");
+                let mut filename = workdir.clone();
+                filename.push(icon_theme_file);
+
+                // Copy icon files if they exist in the source directory
+                let source_dir = &self.directory;
+                let dest_dir = path.as_ref().to_path_buf();
+
+                // Create an IconFileManager for this icon theme
+                let mut icon_manager = IconFileManager::new(source_dir, &dest_dir, "icons");
+
+                // Track all icons from this theme with source base path
+                if let Err(e) = icon_theme.track_icons_with_base(&mut icon_manager, Some(source_dir)) {
+                    log::warn!("Failed to track icon files for theme '{}': {}", theme_name, e);
+                }
+
+                // Copy the icon files and update paths if icons were found
+                if !icon_manager.tracked_icons().is_empty() {
+                    // Try to copy icons - if it fails, we'll still write the theme JSON
+                    if let Err(e) = icon_manager.copy_icons() {
+                        log::warn!("Failed to copy icon files for theme '{}': {}", theme_name, e);
+                        // Write the theme as-is without updated paths
+                        icon_theme.write(filename)?;
+                    } else {
+                        // Create a mapping of old paths to new paths
+                        let mut path_mapping = std::collections::HashMap::new();
+                        for icon_path in icon_theme.get_icon_paths() {
+                            if let Some(filename_str) = IconFileManager::extract_filename(&icon_path) {
+                                let new_path = icon_manager.get_relative_path(&filename_str);
+                                path_mapping.insert(icon_path, new_path);
+                            }
+                        }
+
+                        // Update the icon theme with new paths and write it
+                        let mut updated_theme = icon_theme.clone();
+                        updated_theme.update_icon_paths(&path_mapping);
+                        updated_theme.write(filename)?;
+
+                        log::info!(
+                            "Copied {} icon files for theme '{}'",
+                            icon_manager.tracked_icons().len(),
+                            theme_name
+                        );
+                    }
+                } else {
+                    // No icons to copy, write the theme as-is
+                    icon_theme.write(filename)?;
+                }
+            }
         }
 
         workdir.pop();
@@ -289,9 +359,7 @@ impl Extension for VsCodeExtension {
     }
 
     fn build_official_path(name: &str, extdir: &str) -> String {
-        let extname = VsCodeExtension::normalize_filename(name);
-        let subdir = extname.replace("-color-theme.json", "");
-        format!("{extdir}/{subdir}/{extname}")
+        format!("{}/{}", extdir, name)
     }
 
     fn name(&self) -> &str {
@@ -351,10 +419,14 @@ impl From<ZedExtension> for VsCodeExtension {
             .icon_themes()
             .iter()
             .map(|xs| {
+                // Generate a proper path for the icon theme based on its name
+                let theme_filename = format!("{}.json", slug::slugify(&xs.name));
+                let theme_path = format!("./icon_themes/{}", theme_filename);
+
                 let pointer = IconThemePointer {
                     id: slug::slugify(xs.name.as_str()),
                     label: xs.name.clone(),
-                    path: "./icons".to_string(), // TODO do vscode extensions ever have more than one icon set?
+                    path: theme_path,
                 };
                 let vsi = VsCodeIconTheme::from(xs);
                 (vsi, pointer)

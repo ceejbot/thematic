@@ -8,7 +8,7 @@ use glob::glob;
 
 use crate::editors::{Extension, ThemeFile};
 use crate::vscode::VsCodeExtension;
-use crate::{ThemeError, VsCodeTheme, ZedIconTheme, ZedManifest, ZedTheme, ZedThemeFamily};
+use crate::{IconFileManager, ThemeError, VsCodeTheme, ZedIconTheme, ZedManifest, ZedTheme, ZedThemeFamily};
 
 static EXTENSION_DIR: &str = "Library/Application Support/Zed/extensions/installed";
 
@@ -177,7 +177,7 @@ impl Extension for ZedExtension {
 
     fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let mut workdir = PathBuf::new();
-        workdir.push(path);
+        workdir.push(&path);
         workdir.push("themes");
         std::fs::create_dir_all(&workdir)?;
 
@@ -198,10 +198,49 @@ impl Extension for ZedExtension {
                 let mut filename = workdir.clone();
                 let icon_theme_file = ZedExtension::normalize_name(&icon_theme.name);
                 filename.push(icon_theme_file);
-                icon_theme.write(filename)?;
 
-                // TODO: Copy icon files using IconFileManager
-                // This will be implemented when we have the source path tracking
+                // Copy icon files if they exist in the source directory
+                let source_dir = &self.directory;
+                let dest_dir = path.as_ref().to_path_buf();
+
+                // Create an IconFileManager for this icon theme
+                let mut icon_manager = IconFileManager::new(source_dir, &dest_dir, "icons");
+
+                // Track all icons from this theme with source base path
+                icon_theme.track_icons_with_base(&mut icon_manager, Some(source_dir))?;
+
+                // Copy the icon files and update paths if icons were found
+                if !icon_manager.tracked_icons().is_empty() {
+                    // Try to copy icons - if it fails, we'll still write the theme JSON
+                    if let Err(e) = icon_manager.copy_icons() {
+                        log::warn!("Failed to copy icon files for theme '{}': {}", icon_theme.name, e);
+                        // Write the theme as-is without updated paths
+                        icon_theme.write(filename)?;
+                    } else {
+                        // Create a mapping of old paths to new paths
+                        let mut path_mapping = HashMap::new();
+                        for icon_path in icon_theme.get_icon_paths() {
+                            if let Some(filename_str) = IconFileManager::extract_filename(&icon_path) {
+                                let new_path = icon_manager.get_relative_path(&filename_str);
+                                path_mapping.insert(icon_path, new_path);
+                            }
+                        }
+
+                        // Update the icon theme with new paths and write it
+                        let mut updated_theme = icon_theme.clone();
+                        updated_theme.update_icon_paths(&path_mapping);
+                        updated_theme.write(filename)?;
+
+                        log::info!(
+                            "Copied {} icon files for theme '{}'",
+                            icon_manager.tracked_icons().len(),
+                            icon_theme.name
+                        );
+                    }
+                } else {
+                    // No icons to copy, write the theme as-is
+                    icon_theme.write(filename)?;
+                }
             }
         }
 
@@ -329,10 +368,12 @@ impl From<VsCodeExtension> for ZedExtension {
             themes: family_pointers,
             icon_themes: icon_theme_pointers,
         };
-        let directory = ZedExtension::build_official_path(metadata.id.as_str(), EXTENSION_DIR);
+        // Use the source VSCode extension directory for icon file copying
+        // The actual destination path will be determined during write operations
+        let source_directory = extension.official_path().clone();
 
         ZedExtension {
-            directory: directory.into(),
+            directory: source_directory,
             name: display_name,
             families,
             metadata,
@@ -425,5 +466,108 @@ mod tests {
         let theme =
             ZedExtension::read("rose-pine-moon.json").expect("expected to read official rose pine moon extension");
         assert!(theme.name().contains("Rosé Pine"));
+    }
+
+    #[test]
+    fn test_icon_file_copying_during_extension_write() {
+        use std::collections::HashMap;
+        use std::fs;
+
+        use tempfile::TempDir;
+
+        // Create temporary directories
+        let source_dir = TempDir::new().expect("Failed to create temp source dir");
+        let dest_dir = TempDir::new().expect("Failed to create temp dest dir");
+
+        // Create source icon files
+        let icons_dir = source_dir.path().join("icons");
+        fs::create_dir_all(&icons_dir).expect("Failed to create icons directory");
+
+        let file_icon_content = r#"<svg xmlns="http://www.w3.org/2000/svg"><rect fill="blue"/></svg>"#;
+        let folder_icon_content = r#"<svg xmlns="http://www.w3.org/2000/svg"><rect fill="yellow"/></svg>"#;
+        let folder_open_content = r#"<svg xmlns="http://www.w3.org/2000/svg"><rect fill="green"/></svg>"#;
+
+        fs::write(icons_dir.join("file.svg"), file_icon_content).expect("Failed to write file icon");
+        fs::write(icons_dir.join("folder.svg"), folder_icon_content).expect("Failed to write folder icon");
+        fs::write(icons_dir.join("folder-open.svg"), folder_open_content).expect("Failed to write folder-open icon");
+
+        // Create Zed icon theme with file icons
+        let mut file_icons = HashMap::new();
+        file_icons.insert(
+            "default".to_string(),
+            crate::editors::zed::icon_theme::FileIcon {
+                path: "./icons/file.svg".to_string(),
+            },
+        );
+
+        let zed_icon_theme = ZedIconTheme {
+            name: "Test Icon Theme".to_string(),
+            appearance: "dark".to_string(),
+            directory_icons: Some(crate::editors::zed::icon_theme::DirectoryIcons {
+                collapsed: "./icons/folder.svg".to_string(),
+                expanded: "./icons/folder-open.svg".to_string(),
+            }),
+            file_stems: None,
+            file_suffixes: None,
+            file_icons: Some(file_icons),
+        };
+
+        // Create Zed extension with icon theme
+        let metadata = ZedManifest {
+            id: "test-extension".to_string(),
+            name: "Test Extension".to_string(),
+            version: "1.0.0".to_string(),
+            schema_version: 1,
+            description: "Test extension for icon copying".to_string(),
+            repository: "".to_string(),
+            authors: vec!["test".to_string()],
+            themes: Vec::new(),
+            icon_themes: vec!["./icon_themes/test-icon-theme.json".to_string()],
+        };
+
+        let zed_extension = ZedExtension {
+            directory: source_dir.path().to_path_buf(),
+            name: "Test Extension".to_string(),
+            families: Vec::new(),
+            icon_themes: vec![zed_icon_theme],
+            all_themes: Vec::new(),
+            metadata,
+        };
+
+        // Write the Zed extension
+        zed_extension
+            .write_to(dest_dir.path())
+            .expect("Failed to write Zed extension");
+
+        // Verify that icon files were copied
+        let dest_icons_dir = dest_dir.path().join("icons");
+        assert!(dest_icons_dir.exists(), "Icons directory should be created");
+        assert!(dest_icons_dir.join("file.svg").exists(), "File icon should be copied");
+        assert!(
+            dest_icons_dir.join("folder.svg").exists(),
+            "Folder icon should be copied"
+        );
+        assert!(
+            dest_icons_dir.join("folder-open.svg").exists(),
+            "Folder-open icon should be copied"
+        );
+
+        // Verify icon file contents
+        let copied_file_content =
+            fs::read_to_string(dest_icons_dir.join("file.svg")).expect("Failed to read copied file icon");
+        assert_eq!(copied_file_content, file_icon_content, "File icon content should match");
+
+        // Verify that the icon theme JSON was written
+        let icon_theme_path = dest_dir.path().join("icon_themes").join("test-icon-theme.json");
+        assert!(icon_theme_path.exists(), "Icon theme JSON should be written");
+
+        // Verify that icon paths in the theme JSON were updated to point to ./icons/
+        let theme_content = fs::read_to_string(&icon_theme_path).expect("Failed to read icon theme JSON");
+        assert!(
+            theme_content.contains("./icons/"),
+            "Icon paths should be updated to ./icons/"
+        );
+
+        println!("✅ Icon file copying test passed successfully!");
     }
 }
