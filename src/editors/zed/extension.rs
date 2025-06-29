@@ -8,7 +8,9 @@ use glob::glob;
 
 use crate::editors::{Extension, ThemeFile};
 use crate::vscode::VsCodeExtension;
-use crate::{IconFileManager, ThemeError, VsCodeTheme, ZedIconTheme, ZedManifest, ZedTheme, ZedThemeFamily};
+use crate::{
+    IconFileManager, ThemeError, VsCodeTheme, ZedIconTheme, ZedIconThemeFamily, ZedManifest, ZedTheme, ZedThemeFamily,
+};
 
 static EXTENSION_DIR: &str = "Library/Application Support/Zed/extensions/installed";
 
@@ -17,6 +19,8 @@ static EXTENSION_DIR: &str = "Library/Application Support/Zed/extensions/install
 pub struct ZedExtension {
     /// Where this extension resides on disk. Pub(crate) for testing.
     pub(crate) directory: PathBuf,
+    /// Source directory for copying assets (e.g., icon files) during conversion
+    source_directory: Option<PathBuf>,
     /// A portion of the toml extension manifest.
     metadata: ZedManifest,
     /// The human name of the extension.
@@ -32,10 +36,27 @@ pub struct ZedExtension {
 impl ZedExtension {
     pub fn find_from_name(name: &str, extdir: &str) -> Result<Box<Self>, ThemeError> {
         let barename = name.replace(".json", "");
+        let slugged_name = slug::slugify(&barename);
+
+        // First, try to find extension.toml files in directories that match the name
+        let globby = format!("{}/*/extension.toml", extdir);
+        let matches = glob(globby.as_str())?;
+
+        for entry in matches {
+            if let Ok(toml_path) = entry {
+                if let Some(dir_name) = toml_path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str()) {
+                    // Check if directory name contains our search term
+                    if dir_name.contains(&slugged_name) || dir_name.contains(&barename) {
+                        return ZedExtension::read_from_path(&toml_path, barename);
+                    }
+                }
+            }
+        }
+
+        // If no extension.toml found, fall back to looking for individual JSON theme files
         let extname = ZedExtension::normalize_name(name);
         let globby = format!("{}/**/{}", extdir, extname);
 
-        // use globs to find a file named `name.json` somewhere in this as a subdir
         let mut matches = glob(globby.as_str())?;
         let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) else {
             return Err(ThemeError::ThemeNotFound(name.to_owned()));
@@ -93,6 +114,7 @@ impl ZedExtension {
         let extension = Self {
             name: family.name.clone(),
             directory: extpath.clone(),
+            source_directory: None,
             families: vec![family],
             icon_themes,
             all_themes,
@@ -146,13 +168,15 @@ impl ZedExtension {
             .filter_map(|xs| {
                 let mut itheme = extpath.clone();
                 itheme.push(xs);
-                ZedIconTheme::read(&itheme).ok()
+                ZedIconThemeFamily::read(&itheme).ok()
             })
+            .flat_map(|family| family.themes)
             .collect();
 
         let extension = ZedExtension {
             name: metadata.name.clone(),
             directory: extpath,
+            source_directory: None,
             metadata,
             families,
             icon_themes,
@@ -200,7 +224,7 @@ impl Extension for ZedExtension {
                 filename.push(icon_theme_file);
 
                 // Copy icon files if they exist in the source directory
-                let source_dir = &self.directory;
+                let source_dir = self.source_directory.as_ref().unwrap_or(&self.directory);
                 let dest_dir = path.as_ref().to_path_buf();
 
                 // Create an IconFileManager for this icon theme
@@ -209,13 +233,20 @@ impl Extension for ZedExtension {
                 // Track all icons from this theme with source base path
                 icon_theme.track_icons_with_base(&mut icon_manager, Some(source_dir))?;
 
-                // Copy the icon files and update paths if icons were found
-                if !icon_manager.tracked_icons().is_empty() {
+                // Create a ZedIconThemeFamily to wrap the individual theme
+                let author = self
+                    .metadata
+                    .authors()
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| "Unknown".to_string());
+
+                let theme_to_write = if !icon_manager.tracked_icons().is_empty() {
                     // Try to copy icons - if it fails, we'll still write the theme JSON
                     if let Err(e) = icon_manager.copy_icons() {
                         log::warn!("Failed to copy icon files for theme '{}': {}", icon_theme.name, e);
-                        // Write the theme as-is without updated paths
-                        icon_theme.write(filename)?;
+                        // Use the theme as-is without updated paths
+                        icon_theme.clone()
                     } else {
                         // Create a mapping of old paths to new paths
                         let mut path_mapping = HashMap::new();
@@ -226,21 +257,34 @@ impl Extension for ZedExtension {
                             }
                         }
 
-                        // Update the icon theme with new paths and write it
+                        // Update the icon theme with new paths
                         let mut updated_theme = icon_theme.clone();
                         updated_theme.update_icon_paths(&path_mapping);
-                        updated_theme.write(filename)?;
 
-                        log::info!(
+                        log::debug!(
                             "Copied {} icon files for theme '{}'",
                             icon_manager.tracked_icons().len(),
                             icon_theme.name
                         );
+
+                        updated_theme
                     }
                 } else {
-                    // No icons to copy, write the theme as-is
-                    icon_theme.write(filename)?;
-                }
+                    // No icons to copy, use the theme as-is
+                    icon_theme.clone()
+                };
+
+                // Create a ZedIconThemeFamily wrapper
+                let icon_family = crate::editors::zed::icon_theme::ZedIconThemeFamily {
+                    schema: Some("https://zed.dev/schema/icon_themes/v0.2.0.json".to_string()),
+                    name: icon_theme.name.clone(),
+                    author,
+                    themes: vec![theme_to_write],
+                    source_path: None,
+                };
+
+                // Write the icon theme family
+                icon_family.write(filename)?;
             }
         }
 
@@ -314,22 +358,28 @@ impl From<VsCodeExtension> for ZedExtension {
         let family_name_pairs = crate::group_families(theme_names);
         let families: Vec<ZedThemeFamily> = family_name_pairs
             .iter()
-            .map(|(maybe_name, name_family)| {
+            .filter_map(|(maybe_name, name_family)| {
                 let themes: Vec<ZedTheme> = name_family
                     .iter()
                     .filter_map(|name| theme_map.remove(name).map(|xs| ZedTheme::from(&xs)))
                     .collect();
+
+                // Skip empty theme families (happens with icon-only extensions)
+                if themes.is_empty() {
+                    return None;
+                }
+
                 let fam_name = if let Some(n) = maybe_name {
                     n.clone()
                 } else {
-                    themes.as_slice()[0].name.clone()
+                    themes[0].name.clone()
                 };
-                ZedThemeFamily {
+                Some(ZedThemeFamily {
                     schema: None,
                     author: author.clone(),
                     name: fam_name,
                     themes,
-                }
+                })
             })
             .collect();
 
@@ -367,13 +417,18 @@ impl From<VsCodeExtension> for ZedExtension {
             authors,
             themes: family_pointers,
             icon_themes: icon_theme_pointers,
+            ..Default::default()
         };
-        // Use the source VSCode extension directory for icon file copying
-        // The actual destination path will be determined during write operations
-        let source_directory = extension.official_path().clone();
+        // Create proper Zed extension directory path
+        let zed_extension_name = slug::slugify(&display_name);
+        let zed_directory = PathBuf::from(ZedExtension::build_official_path(
+            &zed_extension_name,
+            &ZedExtension::extensions_path(),
+        ));
 
         ZedExtension {
-            directory: source_directory,
+            directory: zed_directory,
+            source_directory: Some(extension.official_path().clone()),
             name: display_name,
             families,
             metadata,
@@ -421,6 +476,7 @@ impl From<&VsCodeTheme> for ZedExtension {
         ZedExtension {
             name: vscode_theme.name.clone(),
             directory: directory.into(),
+            source_directory: None,
             metadata,
             families: vec![family],
             all_themes,
@@ -523,10 +579,12 @@ mod tests {
             authors: vec!["test".to_string()],
             themes: Vec::new(),
             icon_themes: vec!["./icon_themes/test-icon-theme.json".to_string()],
+            ..Default::default()
         };
 
         let zed_extension = ZedExtension {
             directory: source_dir.path().to_path_buf(),
+            source_directory: None,
             name: "Test Extension".to_string(),
             families: Vec::new(),
             icon_themes: vec![zed_icon_theme],

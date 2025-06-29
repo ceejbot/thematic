@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ZedManifest {
     pub(crate) id: String,
     pub(crate) name: String,
@@ -16,6 +16,14 @@ pub struct ZedManifest {
     pub(crate) authors: Vec<String>,
     pub(crate) themes: Vec<String>,
     pub(crate) icon_themes: Vec<String>,
+    pub(crate) languages: Vec<String>,
+    pub(crate) capabilities: Vec<String>,
+    pub(crate) lib: toml::Table,
+    pub(crate) grammars: toml::Table,
+    pub(crate) language_servers: toml::Table,
+    pub(crate) context_servers: toml::Table,
+    pub(crate) slash_commands: toml::Table,
+    pub(crate) indexed_docs_providers: toml::Table,
 }
 
 impl Default for ZedManifest {
@@ -30,6 +38,14 @@ impl Default for ZedManifest {
             authors: Vec::new(),
             themes: Vec::new(),
             icon_themes: Vec::new(),
+            languages: Vec::new(),
+            capabilities: Vec::new(),
+            lib: toml::Table::new(),
+            grammars: toml::Table::new(),
+            language_servers: toml::Table::new(),
+            context_servers: toml::Table::new(),
+            slash_commands: toml::Table::new(),
+            indexed_docs_providers: toml::Table::new(),
         }
     }
 }

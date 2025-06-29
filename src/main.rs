@@ -102,11 +102,32 @@ fn handle_vscode_extension(fname: String) -> Result<(), ThemeError> {
     log::info!("✓ Loaded VSCode theme extension: {fname}");
     log::debug!("Theme details:");
     log::debug!("  - Name: {}", vscode.manifest().name());
-    log::debug!("  - Themes in extension: {}", vscode.manifest().themes().len());
+    log::debug!("  - Color themes in extension: {}", vscode.manifest().themes().len());
+    log::debug!(
+        "  - Icon themes in extension: {}",
+        vscode.manifest().icon_themes().len()
+    );
 
     let converted = ZedExtension::from(vscode);
     converted.write()?;
-    log::info!("✓ Converted to a Zed theme extension.");
+
+    // Provide summary of what was converted
+    let color_count = converted.families().iter().map(|f| f.themes.len()).sum::<usize>();
+    let icon_count = converted.icon_themes().len();
+
+    if color_count > 0 && icon_count > 0 {
+        log::info!(
+            "✓ Converted {} color theme(s) and {} icon theme(s) to Zed format.",
+            color_count,
+            icon_count
+        );
+    } else if color_count > 0 {
+        log::info!("✓ Converted {} color theme(s) to Zed format.", color_count);
+    } else if icon_count > 0 {
+        log::info!("✓ Converted {} icon theme(s) to Zed format.", icon_count);
+    } else {
+        log::warn!("No themes found to convert.");
+    }
 
     Ok(())
 }
@@ -119,11 +140,29 @@ fn handle_zed_extension(fname: String) -> Result<(), ThemeError> {
     log::debug!("Theme details:");
     log::debug!("  - Name: {}", zed.manifest().name());
     log::debug!("  - Authors: {:#?}", zed.manifest().authors());
-    log::debug!("  - Themes in extension: {}", zed.manifest().themes().len());
+    log::debug!("  - Color themes in extension: {}", zed.manifest().themes().len());
+    log::debug!("  - Icon themes in extension: {}", zed.manifest().icon_themes().len());
 
     let converted = VsCodeExtension::from(zed);
     converted.write()?;
-    log::info!("✓ Converted to a VSCode theme extension.");
+
+    // Provide summary of what was converted
+    let color_count = converted.themes().len();
+    let icon_count = converted.icon_themes().len();
+
+    if color_count > 0 && icon_count > 0 {
+        log::info!(
+            "✓ Converted {} color theme(s) and {} icon theme(s) to VSCode format.",
+            color_count,
+            icon_count
+        );
+    } else if color_count > 0 {
+        log::info!("✓ Converted {} color theme(s) to VSCode format.", color_count);
+    } else if icon_count > 0 {
+        log::info!("✓ Converted {} icon theme(s) to VSCode format.", icon_count);
+    } else {
+        log::warn!("No themes found to convert.");
+    }
 
     Ok(())
 }
