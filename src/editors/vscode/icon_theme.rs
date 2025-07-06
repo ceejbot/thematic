@@ -90,7 +90,7 @@ impl ThemeFile for VsCodeIconTheme {
         Ok(theme)
     }
 
-    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let content = serde_json::to_string_pretty(self)?;
         fs::write(path, content)?;
         Ok(())
@@ -180,7 +180,7 @@ impl VsCodeIconTheme {
             for (icon_key, icon_def) in icon_definitions {
                 if let Some(icon_path) = &icon_def.icon_path {
                     if let Some(filename) = crate::IconFileManager::extract_filename(icon_path) {
-                        let logical_name = format!("{}_{}", icon_key, filename);
+                        let logical_name = format!("{icon_key}_{filename}");
                         if let Some(base) = source_base {
                             let full_path = base.join(icon_path);
                             if full_path.exists() {
@@ -214,7 +214,7 @@ impl From<&ZedIconTheme> for VsCodeIconTheme {
         if let Some(file_icons) = &zed_theme.file_icons {
             for (icon_type, file_icon) in file_icons {
                 // Create VSCode icon key (add underscore prefix)
-                let icon_key = format!("_{}", icon_type);
+                let icon_key = format!("_{icon_type}");
 
                 icon_definitions.insert(
                     icon_key.clone(),
@@ -264,7 +264,7 @@ impl From<&ZedIconTheme> for VsCodeIconTheme {
         // Convert file suffixes to file extensions
         if let Some(suffixes) = &zed_theme.file_suffixes {
             for (extension, icon_type) in suffixes {
-                let icon_key = format!("_{}", icon_type);
+                let icon_key = format!("_{icon_type}");
                 if icon_definitions.contains_key(&icon_key) {
                     file_extensions.insert(extension.clone(), icon_key);
                 }
@@ -274,7 +274,7 @@ impl From<&ZedIconTheme> for VsCodeIconTheme {
         // Convert file stems to file names
         if let Some(stems) = &zed_theme.file_stems {
             for (filename, icon_type) in stems {
-                let icon_key = format!("_{}", icon_type);
+                let icon_key = format!("_{icon_type}");
                 if icon_definitions.contains_key(&icon_key) {
                     file_names.insert(filename.clone(), icon_key);
                 }

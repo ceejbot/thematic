@@ -2,11 +2,10 @@
 //! We don't try to be complete shiny publishable extensions, but just enough
 //! that the editor can load and use the theme.
 
+use std::collections::HashSet;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-
-use glob::glob;
 
 use super::{Contributions, Repository, ThemePointer, VsCodePackageJson, VsCodeTheme};
 use crate::editors::{Extension, ThemeFile, ZedExtension};
@@ -36,13 +35,13 @@ impl VsCodeExtension {
         let barename = name.replace(".json", "");
         let globby = format!("{}/**/themes/{}*.json", extdir, name.replace(".json", ""));
 
-        let mut matches = glob(globby.as_str())?;
+        let mut matches = glob::glob(globby.as_str())?;
         if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
             return Self::read_from_path(found, barename);
         };
 
-        let extname_glob = format!("{}/*{}*/package.json", extdir, barename);
-        let mut matches = glob(extname_glob.as_str())?;
+        let extname_glob = format!("{extdir}/*{barename}*/package.json");
+        let mut matches = glob::glob(extname_glob.as_str())?;
         if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
             return Self::read_from_path(found, barename);
         };
@@ -52,11 +51,9 @@ impl VsCodeExtension {
 
     pub fn read_from_path(extpath: PathBuf, barename: String) -> Result<Box<VsCodeExtension>, ThemeError> {
         if extpath.ends_with("package.json") {
-            eprintln!("{} ends with package.json", extpath.display());
             let contents = std::fs::read_to_string(&extpath)?;
 
             let metadata: VsCodePackageJson = serde_json::from_str(contents.as_str())?;
-            eprintln!("from_metadata() is next");
             return VsCodeExtension::from_metadata(extpath, metadata);
         }
 
@@ -143,8 +140,12 @@ impl VsCodeExtension {
         Ok(Box::new(extension))
     }
 
-    pub fn from_metadata(found: PathBuf, metadata: VsCodePackageJson) -> Result<Box<VsCodeExtension>, ThemeError> {
-        let mut extpath = found.clone();
+    pub fn from_metadata<P: AsRef<Path>>(
+        found: P,
+        metadata: VsCodePackageJson,
+    ) -> Result<Box<VsCodeExtension>, ThemeError> {
+        let mut extpath = PathBuf::new();
+        extpath.push(found);
         if !extpath.is_dir() {
             extpath.pop();
         }
@@ -176,7 +177,7 @@ impl VsCodeExtension {
 
         let extension = VsCodeExtension {
             name: metadata.display_name.clone(),
-            directory: found,
+            directory: extpath,
             themes,
             icon_themes,
             manifest: metadata,
@@ -260,8 +261,10 @@ impl Extension for VsCodeExtension {
         OFFICIAL_DIR.clone()
     }
 
-    fn read(name: &str) -> Result<Box<VsCodeExtension>, ThemeError> {
-        VsCodeExtension::find_from_name(name, VsCodeExtension::extensions_path().as_str())
+    fn read<P: AsRef<Path>>(extpath: P) -> Result<Box<Self>, ThemeError> {
+        let contents = std::fs::read_to_string(&extpath)?;
+        let metadata: VsCodePackageJson = serde_json::from_str(contents.as_str())?;
+        VsCodeExtension::from_metadata(extpath, metadata)
     }
 
     fn write(&self) -> Result<(), ThemeError> {
@@ -279,7 +282,7 @@ impl Extension for VsCodeExtension {
             let themefile = format!("{slugged}.json");
             let mut filename = workdir.clone();
             filename.push(themefile);
-            theme.write(filename)?;
+            theme.write_to(filename)?;
         }
 
         // Write icon themes if any exist
@@ -311,16 +314,16 @@ impl Extension for VsCodeExtension {
 
                 // Track all icons from this theme with source base path
                 if let Err(e) = icon_theme.track_icons_with_base(&mut icon_manager, Some(source_dir)) {
-                    log::warn!("Failed to track icon files for theme '{}': {}", theme_name, e);
+                    log::warn!("Failed to track icon files for theme '{theme_name}': {e}");
                 }
 
                 // Copy the icon files and update paths if icons were found
                 if !icon_manager.tracked_icons().is_empty() {
                     // Try to copy icons - if it fails, we'll still write the theme JSON
                     if let Err(e) = icon_manager.copy_icons() {
-                        log::warn!("Failed to copy icon files for theme '{}': {}", theme_name, e);
+                        log::warn!("Failed to copy icon files for theme '{theme_name}': {e}");
                         // Write the theme as-is without updated paths
-                        icon_theme.write(filename)?;
+                        icon_theme.write_to(filename)?;
                     } else {
                         // Create a mapping of old paths to new paths
                         let mut path_mapping = std::collections::HashMap::new();
@@ -334,7 +337,7 @@ impl Extension for VsCodeExtension {
                         // Update the icon theme with new paths and write it
                         let mut updated_theme = icon_theme.clone();
                         updated_theme.update_icon_paths(&path_mapping);
-                        updated_theme.write(filename)?;
+                        updated_theme.write_to(filename)?;
 
                         log::info!(
                             "Copied {} icon files for theme '{}'",
@@ -344,7 +347,7 @@ impl Extension for VsCodeExtension {
                     }
                 } else {
                     // No icons to copy, write the theme as-is
-                    icon_theme.write(filename)?;
+                    icon_theme.write_to(filename)?;
                 }
             }
         }
@@ -359,7 +362,7 @@ impl Extension for VsCodeExtension {
     }
 
     fn build_official_path(name: &str, extdir: &str) -> String {
-        format!("{}/{}", extdir, name)
+        format!("{extdir}/{name}")
     }
 
     fn name(&self) -> &str {
@@ -382,6 +385,41 @@ impl Extension for VsCodeExtension {
     /// Themes as slice
     fn icon_themes(&self) -> &[VsCodeIconTheme] {
         self.icon_themes.as_slice()
+    }
+
+    fn search(pattern: &str) -> Result<Vec<Box<Self>>, ThemeError> {
+        let safer = slug::slugify(pattern.replace(".json", ""));
+        let extensionfile_glob = format!("**/*{safer}*/package.json");
+        let matches = crate::globdir(extensionfile_glob.as_str(), VsCodeExtension::extensions_path().as_str());
+        let pile: Vec<_> = matches
+            .iter()
+            .filter_map(|xpath| VsCodeExtension::read(xpath).ok())
+            .collect();
+
+        if !pile.is_empty() {
+            return Ok(pile);
+        }
+
+        // If no extension.toml found, fall back to looking for individual JSON theme files
+        //  let extname = ZedExtension::normalize_name(barename.as_str());
+        let globby = format!("**/themes/{safer}*.json");
+
+        let matches = crate::globdir(globby.as_str(), VsCodeExtension::extensions_path().as_str());
+        let pile: Vec<_> = matches
+            .iter()
+            .map(|xs| {
+                let mut extpath = xs.clone();
+                extpath.pop();
+                extpath.pop();
+                extpath.push("package.json");
+                extpath
+            })
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .filter_map(|xs| VsCodeExtension::read(xs).ok())
+            .collect();
+
+        Ok(pile)
     }
 }
 
@@ -421,7 +459,7 @@ impl From<ZedExtension> for VsCodeExtension {
             .map(|xs| {
                 // Generate a proper path for the icon theme based on its name
                 let theme_filename = format!("{}.json", slug::slugify(&xs.name));
-                let theme_path = format!("./icon_themes/{}", theme_filename);
+                let theme_path = format!("./icon_themes/{theme_filename}");
 
                 let pointer = IconThemePointer {
                     id: slug::slugify(xs.name.as_str()),
@@ -512,6 +550,14 @@ mod tests {
 
     #[test]
     fn no_ci_find_vs_code_extensions() {
+        let candidates =
+            VsCodeExtension::search("rose-pine-moon").expect("expected to find possible rose pine moon extensions");
+        assert!(!candidates.is_empty(), "expected at least one");
+        let theme = candidates
+            .first()
+            .expect("first() in a non-empty list should not be None");
+        assert!(theme.name().contains("Rosé Pine"));
+
         let found = VsCodeExtension::find_from_name("bluloco-light", VsCodeExtension::extensions_path().as_str())
             .expect("failed to find Bluloco Light");
         assert_eq!(found.name, "Bluloco Light Theme");

@@ -34,7 +34,7 @@ impl ThemeFile for ZedThemeFamily {
         Ok(theme)
     }
 
-    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let content = serde_json::to_string_pretty(self)?;
         fs::write(path, content)?;
         Ok(())

@@ -5,6 +5,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::ThemeFile;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ZedManifest {
     pub(crate) id: String,
@@ -16,13 +18,21 @@ pub struct ZedManifest {
     pub(crate) authors: Vec<String>,
     pub(crate) themes: Vec<String>,
     pub(crate) icon_themes: Vec<String>,
+    #[serde(default)]
     pub(crate) languages: Vec<String>,
+    #[serde(default)]
     pub(crate) capabilities: Vec<String>,
+    #[serde(default)]
     pub(crate) lib: toml::Table,
+    #[serde(default)]
     pub(crate) grammars: toml::Table,
+    #[serde(default)]
     pub(crate) language_servers: toml::Table,
+    #[serde(default)]
     pub(crate) context_servers: toml::Table,
+    #[serde(default)]
     pub(crate) slash_commands: toml::Table,
+    #[serde(default)]
     pub(crate) indexed_docs_providers: toml::Table,
 }
 
@@ -77,5 +87,24 @@ impl ZedManifest {
 
     pub fn icon_themes(&self) -> &[String] {
         self.icon_themes.as_slice()
+    }
+}
+
+impl ThemeFile for ZedManifest {
+    type T = ZedManifest;
+
+    fn read<P: AsRef<std::path::Path>>(path: P) -> Result<Self::T, crate::ThemeError> {
+        let contents = std::fs::read_to_string(path)?;
+        Ok(serde_json::from_slice::<ZedManifest>(contents.as_bytes())?)
+    }
+
+    fn write_to<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), crate::ThemeError> {
+        let bytes = serde_json::to_vec_pretty(&self)?;
+        Ok(std::fs::write(path, bytes)?)
+        // TODO write sub-pieces
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self::T, crate::ThemeError> {
+        Ok(serde_json::from_slice::<ZedManifest>(bytes)?)
     }
 }

@@ -41,7 +41,7 @@ impl ThemeFile for ZedIconThemeFamily {
         Ok(theme_family)
     }
 
-    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let content = serde_json::to_string_pretty(self)?;
         std::fs::write(path, content)?;
         Ok(())
@@ -54,7 +54,7 @@ impl ThemeFile for ZedIconThemeFamily {
 
 impl ZedIconThemeFamily {
     pub fn write<P: AsRef<Path>>(&self, destination: P) -> Result<(), ThemeError> {
-        ThemeFile::write(self, destination)
+        ThemeFile::write_to(self, destination)
     }
 
     pub fn themes(&self) -> &[ZedIconTheme] {
@@ -221,7 +221,7 @@ impl ZedIconTheme {
         // Track directory icons
         if let Some(dir_icons) = &self.directory_icons {
             if let Some(filename) = IconFileManager::extract_filename(&dir_icons.collapsed) {
-                let logical_name = format!("directory_collapsed_{}", filename);
+                let logical_name = format!("directory_collapsed_{filename}");
                 if let Some(base) = source_base {
                     let full_path = base.join(&dir_icons.collapsed);
                     if full_path.exists() {
@@ -232,7 +232,7 @@ impl ZedIconTheme {
                 }
             }
             if let Some(filename) = IconFileManager::extract_filename(&dir_icons.expanded) {
-                let logical_name = format!("directory_expanded_{}", filename);
+                let logical_name = format!("directory_expanded_{filename}");
                 if let Some(base) = source_base {
                     let full_path = base.join(&dir_icons.expanded);
                     if full_path.exists() {
@@ -248,7 +248,7 @@ impl ZedIconTheme {
         if let Some(file_icons) = &self.file_icons {
             for (icon_type, file_icon) in file_icons {
                 if let Some(filename) = IconFileManager::extract_filename(&file_icon.path) {
-                    let logical_name = format!("{}_{}", icon_type, filename);
+                    let logical_name = format!("{icon_type}_{filename}");
                     if let Some(base) = source_base {
                         let full_path = base.join(&file_icon.path);
                         if full_path.exists() {
@@ -318,7 +318,7 @@ impl ThemeFile for ZedIconTheme {
         Ok(theme)
     }
 
-    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let content = serde_json::to_string_pretty(self)?;
         std::fs::write(path, content)?;
         Ok(())

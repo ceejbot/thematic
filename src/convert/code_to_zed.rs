@@ -323,7 +323,7 @@ fn create_default_players(style: &ZedThemeStyle) -> Vec<PlayerColor> {
         PlayerColor {
             cursor: Some(base_color.to_string()),
             background: Some(base_color.to_string()),
-            selection: Some(format!("{}22", base_color)), // Add alpha
+            selection: Some(format!("{base_color}22")), // Add alpha
         },
         PlayerColor {
             cursor: Some("#FF6B6B".to_string()),

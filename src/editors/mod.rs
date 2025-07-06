@@ -15,8 +15,10 @@ pub trait Extension {
     type IconThemeType;
     type Manifest;
 
-    /// Attempt to find and read the theme from its name.
-    fn read(name: &str) -> Result<Box<Self>, ThemeError>;
+    /// Search for extensions matching the input pattern.
+    fn search(pattern: &str) -> Result<Vec<Box<Self>>, ThemeError>;
+    /// Read the theme from a path to its manifest.
+    fn read<P: AsRef<Path>>(path: P) -> Result<Box<Self>, ThemeError>;
     /// Write this theme extension to the default place its editor expects it.
     fn write(&self) -> Result<(), ThemeError>;
     /// Write the theme to a specific directory.
@@ -25,7 +27,7 @@ pub trait Extension {
     fn extensions_path() -> String;
     /// The human name of this extension (as opposed to theme).
     fn name(&self) -> &str;
-    /// Get the extension's metadata
+    /// Get the extension's manifest file, with its metadata
     fn manifest(&self) -> &Self::Manifest;
     /// Get all themes associated with this extension.
     fn themes(&self) -> &[Self::ThemeType];
@@ -38,10 +40,13 @@ pub trait Extension {
 }
 
 pub trait ThemeFile {
-    type T;
+    type T: ThemeFile;
 
+    /// Read this item from its normal location.
     fn read<P: AsRef<Path>>(path: P) -> Result<Self::T, ThemeError>;
-    fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError>;
+    /// Write this item to the given location.
+    fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError>;
+    /// Deserialize this item from the input bytes.
     fn from_bytes(bytes: &[u8]) -> Result<Self::T, ThemeError>;
 }
 
@@ -227,9 +232,42 @@ fn get_variant_category(suffix: &str) -> &str {
     }
 }
 
+pub(crate) fn globdir(glob: &str, directory: &str) -> Vec<PathBuf> {
+    use fast_glob::glob_match;
+    use walkdir::WalkDir;
+
+    WalkDir::new(directory)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter_map(|entry| {
+            let epath = entry.path();
+            let ostrich = epath.as_os_str().as_encoded_bytes();
+            if glob_match(glob, ostrich) {
+                Some(epath.into())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn no_ci_globdir_works() {
+        let phrase = "coffee";
+
+        let themefile_glob = ZedExtension::make_manifest_glob(phrase);
+        let found = globdir(themefile_glob.as_str(), ZedExtension::extensions_path().as_str());
+        assert!(!found.is_empty());
+
+        let extensionfile_glob = ZedExtension::make_manifest_glob("rainglow");
+        let found = globdir(extensionfile_glob.as_str(), ZedExtension::extensions_path().as_str());
+        assert!(!found.is_empty());
+    }
+
     #[test]
     fn test_grouping() {
         let theme_names = vec![
