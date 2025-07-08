@@ -267,7 +267,7 @@ mod tests {
         ];
 
         // Debug output to understand grouping behavior
-        println!("Testing Rose Pine grouping with themes: {:?}", theme_names);
+        println!("Testing Rose Pine grouping with themes: {theme_names:?}");
 
         // Test pairwise similarity for debugging
         for (i, theme1) in theme_names.clone().iter().enumerate() {
@@ -277,8 +277,7 @@ mod tests {
                     let base1 = extract_base_theme_name(theme1);
                     let base2 = extract_base_theme_name(theme2);
                     println!(
-                        "  '{}' (base: '{}') vs '{}' (base: '{}'): should_group = {}",
-                        theme1, base1, theme2, base2, should_group
+                        "  '{theme1}' (base: '{base1}') vs '{theme2}' (base: '{base2}'): should_group = {should_group}"
                     );
                 }
             }
@@ -305,7 +304,7 @@ mod tests {
             for (j, theme2) in theme_names.iter().enumerate() {
                 if i < j {
                     let should_group = themes_should_be_grouped(theme1, theme2);
-                    println!("  '{}' vs '{}': should_group = {}", theme1, theme2, should_group);
+                    println!("  '{theme1}' vs '{theme2}': should_group = {should_group}");
                 }
             }
         }

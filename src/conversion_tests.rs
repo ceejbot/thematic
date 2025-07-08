@@ -215,8 +215,7 @@ fn round_trip_vscode_to_zed_to_vscode() {
             if orig_colors.contains_key(key) {
                 assert!(
                     rt_colors.contains_key(key),
-                    "Key color '{}' should be preserved in round trip",
-                    key
+                    "Key color '{key}' should be preserved in round trip"
                 );
             }
         }
@@ -577,9 +576,7 @@ fn specific_color_preservation() {
         if let Some(rt_bg) = round_trip_bg {
             assert!(
                 colors_approximately_equal(&original_bg, rt_bg),
-                "Background color should be preserved: '{}' vs '{}'",
-                original_bg,
-                rt_bg
+                "Background color should be preserved: '{original_bg}' vs '{rt_bg}'"
             );
         }
     }
