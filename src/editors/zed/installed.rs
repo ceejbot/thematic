@@ -2,7 +2,8 @@
 //! we need to add it to this list so it becomes available in Zed to
 //! be used.
 
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
