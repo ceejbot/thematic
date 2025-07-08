@@ -1,6 +1,6 @@
 # thematic
 
-A converter between VSCode and Zed color themes. Tested only on MacOS.
+A converter between VSCode and Zed color themes. Only for MacOS at the moment.
 
 ## Usage
 
@@ -9,6 +9,8 @@ format and vice versa. Output is written to the destination editor's default the
 
 The commands have aliases: `zv` for zed-to-vscode, and `vz` for vscode to zed. The second positional argument is the name of the theme to convert, or part of the name of the theme. For example, `thematic vz rainglow` finds the "Rainglow" theme extension for VSCode in the standard VSCode extensions directory, converts all included themes to Zed format (grouping into Zed families), then writes everything out as a new Zed extension in the standard Zed extension location.
 
+Partial support for icon themes is implemented, but this feature is still in progress.
+
 ```text
 ❯ thematic --help
 Usage: thematic [OPTIONS] <COMMAND>
@@ -16,19 +18,26 @@ Usage: thematic [OPTIONS] <COMMAND>
 Commands:
   vscode-to-zed  Convert a VSCode theme JSON file to Zed format; `vz` for short
   zed-to-vscode  Convert a Zed theme JSON file to VSCode format; `zv` for short
+  zed-list       Find all the Zed color or icon themes with names matching the input pattern
+  vs-code-list   Find all the VSCode color or icon themes with names matching the input pattern
   help           Print this message or the help of the given subcommand(s)
 
 Options:
-  -q             Print little-to-no theme information
-  -v             Print more theme information
-  -h, --help     Print help (see a summary with '-h')
-  -V, --version  Print version
+  -q      Print little-to-no theme information
+
+  -v      Print more theme information
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
 ```
+
+Example single command help:
 
 ```text
 ❯ thematic vz --help
-Convert a VSCode theme JSON file to Zed format; `vz` for short
-
 Usage: thematic vscode-to-zed [OPTIONS] <theme-name>
 
 Arguments:
@@ -61,8 +70,12 @@ Well, there's a file for telling Claude how to work. It also tells humans how to
 
 ## TODO
 
-- [ ] Convert icon themes.
+- [ ] Handle some parts of Zed themes that VSCode doesn't do.
+- [ ] Convert icon themes fully. (Copy files etc.)
 - [ ] Polish up the user-visible output.
+- [ ] Clean up that horrible mess.
+- [ ] Detect that we're running on Linux and use those paths.
+- [ ] Maybe try the Zed Windows beta too.
 
 ## LICENSE
 

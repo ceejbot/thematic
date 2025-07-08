@@ -25,13 +25,13 @@ use thematic::*;
 )]
 #[command(version)]
 pub struct Cli {
-    /// Print little-to-no theme information.
+    /// Quiet output.
     #[arg(global = true, short = 'q', default_value_t = false)]
     quiet: bool,
-    /// Print more theme information.
+    /// Output with theme information.
     #[arg(global = true, short = 'v', default_value_t = false)]
     verbose: bool,
-    /// The conversion command.
+    /// The conversion or list command.
     #[command(subcommand)]
     command: Convert,
 }
@@ -39,28 +39,30 @@ pub struct Cli {
 /// Available conversion commands
 #[derive(Subcommand)]
 pub enum Convert {
+    /// Convert a VSCode theme JSON file to Zed format; `vz` for short
     #[command(name = "vscode-to-zed", alias = "vz")]
-    #[command(about = "Convert a VSCode theme JSON file to Zed format; `vz` for short")]
     VscodeToZed {
-        /// The name or part of the name of a VSCode theme to convert to Zed format.
+        /// The name or part of the name of a VSCode theme to convert to Zed format
         #[arg(value_name = "theme-name")]
         input: String,
     },
+    /// Convert a Zed theme JSON file to VSCode format; `zv` for short
     #[command(name = "zed-to-vscode", alias = "zv")]
-    #[command(about = "Convert a Zed theme JSON file to VSCode format; `zv` for short")]
     ZedToVscode {
-        /// The name or part of the name of a Zed theme to convert to VSCode format.
+        /// The name or part of the name of a Zed theme to convert to VSCode format
         #[arg(value_name = "theme-name")]
         input: String,
     },
+    /// Find all the Zed themes with names matching the input pattern; `zed` for short
+    #[command(alias = "zed")]
     ZedList {
-        /// Find all the Zed color or icon themes with names matching the input pattern.
-        #[arg(alias = "zed")]
+        /// the string to search for
         pattern: String,
     },
+    /// Find all the VSCode themes with names matching the input pattern; `vsc` for short
+    #[command(alias = "vsc")]
     VSCodeList {
-        /// Find all the VSCode color or icon themes with names matching the input pattern.
-        #[arg(alias = "vsc")]
+        /// the string to search for
         pattern: String,
     },
 }
@@ -183,7 +185,7 @@ fn handle_zed_search(pattern: String) -> Result<(), ThemeError> {
     println!("Found {}", pluralize(matches.len(), "match", "matches"));
     println!();
     for found in matches {
-        println!("• {}", found.name());
+        println!("• {}", found.name().yellow());
         println!(
             "    {}",
             pluralize(found.manifest().themes().len(), "color theme", "color themes")
@@ -203,7 +205,7 @@ fn handle_vscode_search(pattern: String) -> Result<(), ThemeError> {
     println!("Found {}", pluralize(matches.len(), "match", "matches"));
     println!();
     for found in matches {
-        println!("• {}", found.name());
+        println!("• {}", found.name().yellow());
         println!(
             "    {}",
             pluralize(found.manifest().themes().len(), "color theme", "color themes")
