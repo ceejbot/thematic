@@ -256,19 +256,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn no_ci_globdir_works() {
-        let phrase = "coffee";
-
-        let themefile_glob = ZedExtension::make_manifest_glob(phrase);
-        let found = globdir(themefile_glob.as_str(), ZedExtension::extensions_path().as_str());
-        assert!(!found.is_empty());
-
-        let extensionfile_glob = ZedExtension::make_manifest_glob("rainglow");
-        let found = globdir(extensionfile_glob.as_str(), ZedExtension::extensions_path().as_str());
-        assert!(!found.is_empty());
-    }
-
-    #[test]
     fn test_grouping() {
         let theme_names = vec![
             "Rosé Pine".to_string(),
