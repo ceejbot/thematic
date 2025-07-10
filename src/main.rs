@@ -10,6 +10,7 @@ use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
+use strsim::normalized_levenshtein;
 use thematic::editors::{Extension, VsCodeExtension, ZedExtension};
 use thematic::*;
 
@@ -114,7 +115,22 @@ fn main() -> Result<(), ThemeError> {
 }
 
 fn handle_vscode_extension(fname: String) -> Result<(), ThemeError> {
-    let vscode = *(VsCodeExtension::read(fname.as_str())?);
+    let candidates = VsCodeExtension::search(fname.as_str())?;
+    if candidates.is_empty() {
+        log::info!("Can't find a theme matching {}.", fname.blue());
+        std::process::exit(1);
+    }
+
+    let boxed = if candidates.len() > 1 {
+        best_match(fname.as_str(), candidates)
+    } else {
+        candidates
+            .first()
+            .expect("a vec with exactly one entry doesn't have a first() ?? !!")
+            .clone()
+    };
+
+    let vscode = *boxed;
 
     log::info!("✓ Loaded VSCode theme extension: {fname}");
     log::debug!("Theme details:");
@@ -227,6 +243,18 @@ fn pluralize(count: usize, singular: &str, plural: &str) -> String {
     } else {
         format!("{} {plural}", count.bold().blue())
     }
+}
+
+fn best_match<T>(pattern: &str, mut candidates: Vec<Box<T>>) -> Box<T>
+where
+    T: Extension + Clone,
+{
+    candidates.sort_by(|left, right| {
+        let ldist = normalized_levenshtein(pattern, left.name());
+        let rdist = normalized_levenshtein(pattern, right.name());
+        ldist.total_cmp(&rdist)
+    });
+    candidates[0].clone()
 }
 
 #[cfg(test)]

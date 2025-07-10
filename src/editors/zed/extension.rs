@@ -355,7 +355,11 @@ impl Extension for ZedExtension {
     fn search(pattern: &str) -> Result<Vec<Box<Self>>, ThemeError> {
         let extensionfile_glob = ZedExtension::make_manifest_glob(pattern);
         let matches = crate::globdir(extensionfile_glob.as_str(), ZedExtension::extensions_path().as_str());
-        let pile: Vec<_> = matches.iter().filter_map(|xs| ZedExtension::read(xs).ok()).collect();
+        let pile: Vec<_> = matches
+            .iter()
+            .filter_map(|xs| ZedExtension::read(xs).ok())
+            .filter(|xs| !xs.manifest().icon_themes().is_empty() || !xs.manifest().themes().is_empty())
+            .collect();
 
         if !pile.is_empty() {
             return Ok(pile);

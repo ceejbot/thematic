@@ -394,6 +394,7 @@ impl Extension for VsCodeExtension {
         let pile: Vec<_> = matches
             .iter()
             .filter_map(|xpath| VsCodeExtension::read(xpath).ok())
+            .filter(|xs| !xs.manifest.icon_themes().is_empty() || !xs.manifest.themes().is_empty())
             .collect();
 
         if !pile.is_empty() {

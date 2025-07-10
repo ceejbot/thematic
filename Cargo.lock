@@ -855,6 +855,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "slug",
+ "strsim",
  "tempfile",
  "thiserror",
  "toml",
