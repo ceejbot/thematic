@@ -7,15 +7,33 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use super::{Contributions, Repository, ThemePointer, VsCodePackageJson, VsCodeTheme};
+use super::{Contributions, IconThemePointer, Repository, ThemePointer, VsCodePackageJson, VsCodeTheme};
 use crate::editors::{Extension, ThemeFile, ZedExtension};
-use crate::{IconFileManager, IconThemePointer, ThemeError, VsCodeIconTheme, ZedThemeFamily, find_extension_name};
+use crate::{IconFileManager, ThemeError, VsCodeIconTheme, ZedThemeFamily, find_extension_name};
 
-static EXTENSION_DIR: &str = ".vscode/extensions";
+/// Platform-specific VSCode extension directory paths
+fn get_vscode_extension_dir() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        ".vscode/extensions"
+    }
+    #[cfg(target_os = "linux")]
+    {
+        ".vscode/extensions"
+    }
+    #[cfg(target_os = "windows")]
+    {
+        ".vscode/extensions"
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    {
+        ".vscode/extensions" // VSCode is consistent across platforms
+    }
+}
 
 static OFFICIAL_DIR: LazyLock<String> = LazyLock::new(|| {
     let twiddle = home::home_dir().unwrap_or_default();
-    format!("{}/{}", twiddle.display(), EXTENSION_DIR)
+    format!("{}/{}", twiddle.display(), get_vscode_extension_dir())
 });
 
 #[derive(Debug, Clone)]
@@ -115,9 +133,50 @@ impl VsCodeExtension {
             })
             .collect();
         theme_pointers.sort_by(|left, right| left.label.cmp(&right.label));
+        
+        // Discover icon themes in the extension directory
+        let icon_themes_dir = extpath.join("icons");
+        let mut icon_themes = Vec::new();
+        let mut icon_theme_pointers = Vec::new();
+        
+        if icon_themes_dir.exists() {
+            // Look for icon theme JSON files
+            let icon_theme_files = std::fs::read_dir(&icon_themes_dir)
+                .map_err(ThemeError::IoError)?
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| {
+                    entry.path().extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| ext.eq_ignore_ascii_case("json"))
+                        .unwrap_or(false)
+                })
+                .collect::<Vec<_>>();
+
+            for entry in icon_theme_files {
+                let icon_theme_path = entry.path();
+                if let Ok(icon_theme) = VsCodeIconTheme::read(&icon_theme_path) {
+                    // Create icon theme pointer for the manifest
+                    let relative_path = format!("./icons/{}", 
+                        icon_theme_path.file_name()
+                            .and_then(|name| name.to_str())
+                            .unwrap_or("icon-theme.json")
+                    );
+                    
+                    let icon_theme_pointer = IconThemePointer {
+                        id: slug::slugify(format!("{extension_name}-icons")),
+                        label: format!("{extension_name} Icons"),
+                        path: relative_path,
+                    };
+                    
+                    icon_theme_pointers.push(icon_theme_pointer);
+                    icon_themes.push(icon_theme);
+                }
+            }
+        }
+
         let contributes = Contributions {
             themes: theme_pointers,
-            icon_themes: Vec::new(),
+            icon_themes: icon_theme_pointers,
         };
 
         let metadata = VsCodePackageJson {
@@ -132,7 +191,7 @@ impl VsCodeExtension {
         let extension = VsCodeExtension {
             name: barename.to_owned(),
             directory: extpath,
-            icon_themes: Vec::new(), // TODO
+            icon_themes,
             themes,
             manifest: metadata,
         };
@@ -194,7 +253,7 @@ impl VsCodeExtension {
     }
 
     pub fn new(theme_name: &str, filename: &str, themes: Vec<VsCodeTheme>) -> Self {
-        let dir = VsCodeExtension::build_official_path(filename, EXTENSION_DIR);
+        let dir = VsCodeExtension::build_official_path(filename, get_vscode_extension_dir());
         let mut directory = PathBuf::new();
         directory.push(dir);
         let name = theme_name.to_owned();

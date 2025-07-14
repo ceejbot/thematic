@@ -11,7 +11,25 @@ use crate::{
     ZedTheme, ZedThemeFamily,
 };
 
-static EXTENSION_DIR: &str = "Library/Application Support/Zed/extensions/installed";
+/// Platform-specific Zed extension directory paths
+fn get_zed_extension_dir() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "Library/Application Support/Zed/extensions/installed"
+    }
+    #[cfg(target_os = "linux")]
+    {
+        ".config/zed/extensions/installed"
+    }
+    #[cfg(target_os = "windows")]
+    {
+        "AppData/Roaming/Zed/extensions/installed"
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    {
+        ".config/zed/extensions/installed" // Default to Linux-style for other Unix-like systems
+    }
+}
 
 /// Our representation of a Zed theme extension.
 #[derive(Debug, Clone)]
@@ -36,11 +54,12 @@ impl ZedExtension {
     /// Add the passed-in extension to Zed's list of installed extensions.
     pub fn add_installed(extension: &ZedExtension) -> Result<(), ThemeError> {
         let mut fpath = PathBuf::new();
-        fpath.push(EXTENSION_DIR);
+        fpath.push(ZedExtension::extensions_path());
         fpath.pop();
-        fpath.push("index.js");
+        fpath.push("index.json");
         let mut installed = InstalledExtensions::new(&fpath)?;
         installed.add_extension(extension);
+        log::debug!("Writing out new Zed extensions manifest.");
         installed.write_to(&fpath)?;
 
         Ok(())
@@ -108,7 +127,45 @@ impl ZedExtension {
             "./themes/{}",
             ZedExtension::normalize_name(family.name.as_str())
         )];
-        let icon_themes = Vec::new(); // TODO
+
+        // Discover icon themes in the extension directory
+        let icon_themes_dir = extpath.parent().unwrap_or(extpath).join("icon_themes");
+        let mut icon_themes_paths = Vec::new();
+        let mut discovered_icon_themes = Vec::new();
+
+        if icon_themes_dir.exists() {
+            // Look for icon theme JSON files
+            let icon_theme_files = std::fs::read_dir(&icon_themes_dir)
+                .map_err(ThemeError::IoError)?
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| {
+                    entry
+                        .path()
+                        .extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| ext.eq_ignore_ascii_case("json"))
+                        .unwrap_or(false)
+                })
+                .collect::<Vec<_>>();
+
+            for entry in icon_theme_files {
+                let icon_theme_path = entry.path();
+                if let Ok(icon_theme_family) = ZedIconThemeFamily::read(&icon_theme_path) {
+                    // Add to manifest paths
+                    let relative_path = format!(
+                        "./icon_themes/{}",
+                        icon_theme_path
+                            .file_name()
+                            .and_then(|name| name.to_str())
+                            .unwrap_or("icon-theme.json")
+                    );
+
+                    icon_themes_paths.push(relative_path);
+                    discovered_icon_themes.extend(icon_theme_family.themes);
+                }
+            }
+        }
+
         let all_themes = family.themes.clone();
 
         let metadata = ZedManifest {
@@ -117,6 +174,7 @@ impl ZedExtension {
             version: "0.1.0".to_string(),
             description: "Constructed from a directory of color themes".to_string(),
             themes,
+            icon_themes: icon_themes_paths,
             ..Default::default()
         };
 
@@ -125,7 +183,7 @@ impl ZedExtension {
             directory: extpath.clone(),
             source_directory: None,
             families: vec![family],
-            icon_themes,
+            icon_themes: discovered_icon_themes,
             all_themes,
             metadata,
         };
@@ -321,7 +379,7 @@ impl Extension for ZedExtension {
 
     fn extensions_path() -> String {
         let twiddle = home::home_dir().unwrap_or_default();
-        format!("{}/{}", twiddle.display(), EXTENSION_DIR)
+        format!("{}/{}", twiddle.display(), get_zed_extension_dir())
     }
 
     fn build_official_path(name: &str, extdir: &str) -> String {
@@ -511,7 +569,7 @@ impl From<&VsCodeTheme> for ZedExtension {
 
         // well, if we have a filename, we should use it.
         let theme_filename = slug::slugify(family.name.as_str());
-        let directory = ZedExtension::build_official_path(theme_filename.as_str(), EXTENSION_DIR);
+        let directory = ZedExtension::build_official_path(theme_filename.as_str(), &ZedExtension::extensions_path());
         let themes = family
             .themes
             .iter()
@@ -549,6 +607,26 @@ impl From<&VsCodeTheme> for ZedExtension {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_platform_specific_paths() {
+        // Test that we get reasonable platform-specific paths
+        let extensions_path = ZedExtension::extensions_path();
+        assert!(extensions_path.contains("extensions/installed"));
+
+        // Verify the path contains platform-appropriate directory separators
+        #[cfg(target_os = "macos")]
+        assert!(extensions_path.contains("Library/Application Support/Zed"));
+
+        #[cfg(target_os = "linux")]
+        assert!(extensions_path.contains(".config/zed"));
+
+        #[cfg(target_os = "windows")]
+        assert!(extensions_path.contains("AppData/Roaming/Zed"));
+
+        // Verify that the path is non-empty and absolute-like
+        assert!(!extensions_path.is_empty());
+    }
 
     #[test]
     fn deserialize_fixtures() {

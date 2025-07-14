@@ -1,0 +1,2416 @@
+{
+	"extensions": {
+		"bearded-icon-theme": {
+			"manifest": {
+				"id": "bearded-icon-theme",
+				"name": "Bearded Icon Theme",
+				"version": "0.4.0",
+				"schema_version": 1,
+				"description": "Bearded icon theme for Zed with over 1000+ icons",
+				"repository": "https://github.com/sethstha/bearded-icons-theme",
+				"authors": ["Sanjeev Shrestha <sethstha@gmail.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": ["icon_themes/bearded-icon-theme.json"],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"catppuccin": {
+			"manifest": {
+				"id": "catppuccin",
+				"name": "Catppuccin",
+				"version": "0.2.22",
+				"schema_version": 1,
+				"description": "🦀 Soothing pastel theme for Zed",
+				"repository": "https://github.com/catppuccin/zed",
+				"authors": ["Catppuccin <releases@catppuccin.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": ["themes/catppuccin-no-italics-mauve.json", "themes/catppuccin-mauve.json"],
+				"icon_themes": [],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"catppuccin-dark-pro": {
+			"manifest": {
+				"id": "catppuccin-dark-pro",
+				"name": "Catppuccin Dark Pro",
+				"version": "0.1.0",
+				"schema_version": 1,
+				"description": "🎨 The ultimate hybrid theme combining Catppuccin's elegant UI with One Dark Pro's syntax highlighting. Features 15+ languages, enhanced C/C++ highlighting, semantic highlighting, and ultra-flat design.",
+				"repository": "https://github.com/SharifdotG/Catppuccin-Dark-Pro",
+				"authors": ["SharifdotG"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"catppuccin-icons": {
+			"manifest": {
+				"id": "catppuccin-icons",
+				"name": "Catppuccin Icons",
+				"version": "1.20.0",
+				"schema_version": 1,
+				"description": "🦊 Soothing pastel icons for Zed",
+				"repository": "https://github.com/catppuccin/zed-icons",
+				"authors": ["Catppuccin <releases@catppuccin.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": ["icon_themes/catppuccin-icons.json"],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"catppuccin-vsc": {
+			"manifest": {
+				"id": "catppuccin-vsc",
+				"name": "Catppuccin for VSCode",
+				"version": "0.1.0",
+				"schema_version": 1,
+				"description": "🦌 Soothing pastel theme for VSCode",
+				"repository": "https://github.com/catppuccin/vscode.git",
+				"authors": ["Catppuccin"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [
+					"./themes/catppuccin-frappe.json",
+					"./themes/catppuccin-latte.json",
+					"./themes/catppuccin-macchiato.json",
+					"./themes/catppuccin-mocha.json",
+					"themes/catppuccin-mocha.json",
+					"themes/catppuccin-macchiato.json",
+					"themes/catppuccin-frappe.json",
+					"themes/catppuccin-latte.json"
+				],
+				"icon_themes": [],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"colored-zed-icons-theme": {
+			"manifest": {
+				"id": "colored-zed-icons-theme",
+				"name": "Colored Zed Icons Theme",
+				"version": "0.3.1",
+				"schema_version": 1,
+				"description": "Default Zed icons, but colored!",
+				"repository": "https://github.com/TheRedXD/zed-icons-colored-theme",
+				"authors": ["TheRedXD", "Zed Industries <support@zed.dev>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": ["icon_themes/colored-zed-icons-theme.json"],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"fish": {
+			"manifest": {
+				"id": "fish",
+				"name": "Fish",
+				"version": "0.0.8",
+				"schema_version": 0,
+				"description": "Fish language support for Zed",
+				"repository": "https://github.com/hasit/zed-fish",
+				"authors": ["Hasit Mistry <hasitnm@gmail.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": ["languages/fish"],
+				"grammars": {
+					"fish": {
+						"repository": "https://github.com/ram02z/tree-sitter-fish",
+						"rev": "a78aef9abc395c600c38a037ac779afc7e3cc9e0",
+						"path": null
+					}
+				},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"git-firefly": {
+			"manifest": {
+				"id": "git-firefly",
+				"name": "Git Firefly",
+				"version": "0.0.3",
+				"schema_version": 1,
+				"description": "Provides Git Syntax Highlighting",
+				"repository": "https://github.com/d1y/git_firefly",
+				"authors": ["d1y <chenhonzho@gmail.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": [
+					"languages/gitconfig",
+					"languages/diff",
+					"languages/gitcommit",
+					"languages/gitignore",
+					"languages/gitrebase",
+					"languages/gitattributes"
+				],
+				"grammars": {
+					"diff": {
+						"repository": "https://github.com/the-mikedavis/tree-sitter-diff",
+						"rev": "c165725c28e69b36c5799ff0e458713a844f1aaf",
+						"path": null
+					},
+					"git_commit": {
+						"repository": "https://github.com/the-mikedavis/tree-sitter-git-commit",
+						"rev": "6f193a66e9aa872760823dff020960c6cedc37b3",
+						"path": null
+					},
+					"git_config": {
+						"repository": "https://github.com/the-mikedavis/tree-sitter-git-config",
+						"rev": "9c2a1b7894e6d9eedfe99805b829b4ecd871375e",
+						"path": null
+					},
+					"git_rebase": {
+						"repository": "https://github.com/the-mikedavis/tree-sitter-git-rebase",
+						"rev": "d8a4207ebbc47bd78bacdf48f883db58283f9fd8",
+						"path": null
+					},
+					"gitattributes": {
+						"repository": "https://github.com/tree-sitter-grammars/tree-sitter-gitattributes",
+						"rev": "41940e199ba5763abea1d21b4f717014b45f01ea",
+						"path": null
+					},
+					"gitignore": {
+						"repository": "https://github.com/shunsambongi/tree-sitter-gitignore",
+						"rev": "f4685bf11ac466dd278449bcfe5fd014e94aa504",
+						"path": null
+					}
+				},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"gruvbox-crisp-themes": {
+			"manifest": {
+				"id": "gruvbox-crisp-themes",
+				"name": "Gruvbox Crisp Themes",
+				"version": "0.1.2",
+				"schema_version": 1,
+				"description": "Custom Gruvbox themes for Zed Editor with crisp high contrast variants",
+				"repository": "https://github.com/VatsalSy/zed-gruvbox_custom_themes",
+				"authors": ["Vatsal Sanjay <vatsalsanjay@gmail.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": ["themes/gruvbox-crisp-high-contrast.json"],
+				"icon_themes": [],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"html": {
+			"manifest": {
+				"id": "html",
+				"name": "HTML",
+				"version": "0.2.1",
+				"schema_version": 1,
+				"description": "HTML support.",
+				"repository": "https://github.com/zed-industries/zed",
+				"authors": ["Isaac Clayton <slightknack@gmail.com>"],
+				"lib": {
+					"kind": "Rust",
+					"version": "0.1.0"
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": ["languages/html"],
+				"grammars": {
+					"html": {
+						"repository": "https://github.com/tree-sitter/tree-sitter-html",
+						"rev": "bfa075d83c6b97cd48440b3829ab8d24a2319809",
+						"path": null
+					}
+				},
+				"language_servers": {
+					"vscode-html-language-server": {
+						"language": "HTML",
+						"languages": [],
+						"language_ids": {
+							"HTML": "html",
+							"CSS": "css"
+						},
+						"code_action_kinds": null
+					}
+				},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"just": {
+			"manifest": {
+				"id": "just",
+				"name": "Justfile",
+				"version": "0.1.4",
+				"schema_version": 1,
+				"description": "Justfile syntax highlighting",
+				"repository": "https://github.com/jackTabsCode/zed-just",
+				"authors": ["Jack T. <jack@jackt.space>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": ["languages/just"],
+				"grammars": {
+					"just": {
+						"repository": "https://github.com/IndianBoy42/tree-sitter-just",
+						"rev": "3f90d24eb8c8d9e8c74fee7120d79c3ec7229f26",
+						"path": null
+					}
+				},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"rainglow": {
+			"manifest": {
+				"id": "rainglow",
+				"name": "Rainglow",
+				"version": "0.1.0",
+				"schema_version": 1,
+				"description": "Rainglow color themes by Dayle Rees",
+				"repository": "https://github.com/rainglow/vscode",
+				"authors": ["daylerees"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [
+					"./themes/absent.json",
+					"./themes/allure.json",
+					"./themes/arstotzka.json",
+					"./themes/azure.json",
+					"./themes/banner.json",
+					"./themes/blink.json",
+					"./themes/bold.json",
+					"./themes/boxuk.json",
+					"./themes/brave.json",
+					"./themes/carbonight.json",
+					"./themes/chocolate.json",
+					"./themes/codecourse.json",
+					"./themes/coffee.json",
+					"./themes/comrade.json",
+					"./themes/crackpot.json",
+					"./themes/crisp.json",
+					"./themes/dare.json",
+					"./themes/darkside.json",
+					"./themes/downpour.json",
+					"./themes/earthsong.json",
+					"./themes/fodder.json",
+					"./themes/frantic.json",
+					"./themes/freshcut.json",
+					"./themes/friction.json",
+					"./themes/frontier.json",
+					"./themes/github.json",
+					"./themes/glance.json",
+					"./themes/gloom.json",
+					"./themes/glowfish.json",
+					"./themes/goldfish.json",
+					"./themes/grunge.json",
+					"./themes/halflife.json",
+					"./themes/hawaii.json",
+					"./themes/heroku.json",
+					"./themes/hive.json",
+					"./themes/horizon.json",
+					"./themes/hub.json",
+					"./themes/hyrule.json",
+					"./themes/iceberg.json",
+					"./themes/isotope.json",
+					"./themes/jewel.json",
+					"./themes/jingle.json",
+					"./themes/joker.json",
+					"./themes/juicy.json",
+					"./themes/jumper.json",
+					"./themes/keen.json",
+					"./themes/kiwi.json",
+					"./themes/laracasts.json",
+					"./themes/laravel.json",
+					"./themes/lavender.json",
+					"./themes/legacy.json",
+					"./themes/lichen.json",
+					"./themes/loyal.json",
+					"./themes/mauve.json",
+					"./themes/mellow.json",
+					"./themes/mintchoc.json",
+					"./themes/monzo.json",
+					"./themes/morass.json",
+					"./themes/mud.json",
+					"./themes/newton.json",
+					"./themes/otakon.json",
+					"./themes/overflow.json",
+					"./themes/pastel.json",
+					"./themes/patriot.json",
+					"./themes/peacock.json",
+					"./themes/peacocks-in-space.json",
+					"./themes/peel.json",
+					"./themes/penitent.json",
+					"./themes/piggy.json",
+					"./themes/pleasure.json",
+					"./themes/potpourri.json",
+					"./themes/prime.json",
+					"./themes/rainbow.json",
+					"./themes/rebellion.json",
+					"./themes/revelation.json",
+					"./themes/scorch.json",
+					"./themes/service.json",
+					"./themes/shrek.json",
+					"./themes/slate.json",
+					"./themes/slime.json",
+					"./themes/snappy.json",
+					"./themes/solarflare.json",
+					"./themes/soup.json",
+					"./themes/sourlick.json",
+					"./themes/spearmint.json",
+					"./themes/spitfire.json",
+					"./themes/stark.json",
+					"./themes/stasis.json",
+					"./themes/stealth.json",
+					"./themes/storm.json",
+					"./themes/super.json",
+					"./themes/tame.json",
+					"./themes/tetra.json",
+					"./themes/tickle.json",
+					"./themes/tonic.json",
+					"./themes/tribal.json",
+					"./themes/tron.json",
+					"./themes/turnip.json",
+					"./themes/tweed.json",
+					"./themes/userscape.json",
+					"./themes/vegetable.json",
+					"./themes/violaceous.json",
+					"./themes/vision.json",
+					"./themes/volatile.json",
+					"./themes/warlock.json",
+					"./themes/waste.json",
+					"./themes/yitzchok.json",
+					"./themes/yule.json",
+					"./themes/zacks.json",
+					"themes/friction.json",
+					"themes/tribal.json",
+					"themes/mauve.json",
+					"themes/earthsong.json",
+					"themes/glowfish.json",
+					"themes/lichen.json",
+					"themes/revelation.json",
+					"themes/allure.json",
+					"themes/horizon.json",
+					"themes/tonic.json",
+					"themes/soup.json",
+					"themes/absent.json",
+					"themes/arstotzka.json",
+					"themes/downpour.json",
+					"themes/lavender.json",
+					"themes/morass.json",
+					"themes/fodder.json",
+					"themes/stealth.json",
+					"themes/codecourse.json",
+					"themes/peel.json",
+					"themes/mellow.json",
+					"themes/rainbow.json",
+					"themes/userscape.json",
+					"themes/dare.json",
+					"themes/laracasts.json",
+					"themes/comrade.json",
+					"themes/vision.json",
+					"themes/frontier.json",
+					"themes/hawaii.json",
+					"themes/sourlick.json",
+					"themes/otakon.json",
+					"themes/tickle.json",
+					"themes/boxuk.json",
+					"themes/prime.json",
+					"themes/snappy.json",
+					"themes/banner.json",
+					"themes/iceberg.json",
+					"themes/pleasure.json",
+					"themes/penitent.json",
+					"themes/warlock.json",
+					"themes/tron.json",
+					"themes/stasis.json",
+					"themes/freshcut.json",
+					"themes/coffee.json",
+					"themes/pastel.json",
+					"themes/spearmint.json",
+					"themes/service.json",
+					"themes/overflow.json",
+					"themes/newton.json",
+					"themes/potpourri.json",
+					"themes/goldfish.json",
+					"themes/crisp.json",
+					"themes/juicy.json",
+					"themes/brave.json",
+					"themes/keen.json",
+					"themes/laravel.json",
+					"themes/violaceous.json",
+					"themes/gloom.json",
+					"themes/mud.json",
+					"themes/spitfire.json",
+					"themes/isotope.json",
+					"themes/zacks.json",
+					"themes/yule.json",
+					"themes/peacock.json",
+					"themes/rebellion.json",
+					"themes/hive.json",
+					"themes/slime.json",
+					"themes/jumper.json",
+					"themes/solarflare.json",
+					"themes/hyrule.json",
+					"themes/kiwi.json",
+					"themes/piggy.json",
+					"themes/monzo.json",
+					"themes/turnip.json",
+					"themes/tweed.json",
+					"themes/glance.json",
+					"themes/jingle.json",
+					"themes/waste.json",
+					"themes/tetra.json",
+					"themes/grunge.json",
+					"themes/joker.json",
+					"themes/carbonight.json",
+					"themes/legacy.json",
+					"themes/storm.json",
+					"themes/darkside.json",
+					"themes/hub.json",
+					"themes/yitzchok.json",
+					"themes/loyal.json",
+					"themes/mintchoc.json",
+					"themes/azure.json",
+					"themes/scorch.json",
+					"themes/github.json",
+					"themes/patriot.json",
+					"themes/volatile.json",
+					"themes/peacocks-in-space.json",
+					"themes/chocolate.json",
+					"themes/stark.json",
+					"themes/blink.json",
+					"themes/jewel.json",
+					"themes/super.json",
+					"themes/vegetable.json",
+					"themes/bold.json",
+					"themes/shrek.json",
+					"themes/frantic.json",
+					"themes/heroku.json",
+					"themes/crackpot.json",
+					"themes/slate.json",
+					"themes/tame.json",
+					"themes/halflife.json"
+				],
+				"icon_themes": [],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"rose-pine-theme": {
+			"manifest": {
+				"id": "rose-pine-theme",
+				"name": "Rosé Pine",
+				"version": "1.3.2",
+				"schema_version": 1,
+				"description": "All natural pine, faux fur, and a bit of soho vibes – a classy minimalist theme for Zed.",
+				"repository": "https://github.com/rose-pine/zed",
+				"authors": ["Kainoa Kanter <kainoa@t1c.dev>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [
+					"themes/rose-pine.json",
+					"themes/rose-pine-dawn.json",
+					"themes/rose-pine-moon.json"
+				],
+				"icon_themes": [],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"serendipity": {
+			"manifest": {
+				"id": "serendipity",
+				"name": "Serendipity Themes",
+				"version": "0.0.8",
+				"schema_version": 1,
+				"description": "Relaxed, gentle and modern | Serendipity theme for Zed",
+				"repository": "https://github.com/meocoder31099/Serendipity-Theme-Zed",
+				"authors": ["Nguyen Dang Vinh <meocoder@gmail.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": ["themes/serendipity.json"],
+				"icon_themes": ["icon_themes/serendipity-icon-theme.json"],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"sql": {
+			"manifest": {
+				"id": "sql",
+				"name": "SQL",
+				"version": "1.1.3",
+				"schema_version": 1,
+				"description": "SQL language support.",
+				"repository": "https://github.com/zed-extensions/sql",
+				"authors": ["nervenes", "notpeter", "phileix", "tammyxiong"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": ["languages/sql"],
+				"grammars": {
+					"sql": {
+						"repository": "https://github.com/DerekStride/tree-sitter-sql",
+						"rev": "4a99c73f5384f2be10adc55208c84d95a7eb1137",
+						"path": null
+					}
+				},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"tcl": {
+			"manifest": {
+				"id": "tcl",
+				"name": "TCL Language",
+				"version": "0.0.1",
+				"schema_version": 1,
+				"description": "An Extension providing TCL Language highlighting",
+				"repository": "https://github.com/richnou/kissb-zed-tcl",
+				"authors": ["Richnou <leys.richard@gmail.com>"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": ["languages/tcl"],
+				"grammars": {
+					"tcl": {
+						"repository": "https://github.com/tree-sitter-grammars/tree-sitter-tcl",
+						"rev": "8f11ac7206a54ed11210491cee1e0657e2962c47",
+						"path": null
+					}
+				},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"toml": {
+			"manifest": {
+				"id": "toml",
+				"name": "TOML",
+				"version": "0.1.4",
+				"schema_version": 1,
+				"description": "TOML support.",
+				"repository": "https://github.com/zed-industries/zed",
+				"authors": ["Max Brunsfeld <max@zed.dev>", "Ammar Arif <evergreenkary@gmail.com>"],
+				"lib": {
+					"kind": "Rust",
+					"version": "0.1.0"
+				},
+				"themes": [],
+				"icon_themes": [],
+				"languages": ["languages/toml"],
+				"grammars": {
+					"toml": {
+						"repository": "https://github.com/tree-sitter/tree-sitter-toml",
+						"rev": "342d9be207c2dba869b9967124c679b5e6fd0ebe",
+						"path": null
+					}
+				},
+				"language_servers": {
+					"taplo": {
+						"language": "TOML",
+						"languages": [],
+						"language_ids": {},
+						"code_action_kinds": null
+					}
+				},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"vsc-material-theme": {
+			"manifest": {
+				"id": "vsc-material-theme",
+				"name": "Material Theme",
+				"version": "0.1.0",
+				"schema_version": 1,
+				"description": "The most epic theme now for Visual Studio Code",
+				"repository": "https://github.com/material-theme/vsc-material-theme.git",
+				"authors": ["Equinusocio"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": ["./themes/material-theme.json", "themes/material-theme.json"],
+				"icon_themes": [],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		},
+		"vscode-great-icons": {
+			"manifest": {
+				"id": "vscode-great-icons",
+				"name": "VSCode Great Icons",
+				"version": "0.1.0",
+				"schema_version": 1,
+				"description": "A big pack of icons (200+) for your files.",
+				"repository": "https://github.com/EmmanuelBeziat/vscode-great-icons.git",
+				"authors": ["emmanuelbeziat"],
+				"lib": {
+					"kind": null,
+					"version": null
+				},
+				"themes": [],
+				"icon_themes": [
+					"./icon_themes/vscode-great-icons.json",
+					"icon_themes/vscode-great-icons.json"
+				],
+				"languages": [],
+				"grammars": {},
+				"language_servers": {},
+				"context_servers": {},
+				"slash_commands": {},
+				"indexed_docs_providers": {},
+				"snippets": null,
+				"capabilities": []
+			},
+			"dev": false
+		}
+	},
+	"themes": {
+		"Catppuccin Frappé": {
+			"extension": "catppuccin-vsc",
+			"path": "themes/catppuccin-frappe.json"
+		},
+		"Catppuccin Frappé - No Italics": {
+			"extension": "catppuccin",
+			"path": "themes/catppuccin-no-italics-mauve.json"
+		},
+		"Catppuccin Latte": {
+			"extension": "catppuccin-vsc",
+			"path": "themes/catppuccin-latte.json"
+		},
+		"Catppuccin Latte - No Italics": {
+			"extension": "catppuccin",
+			"path": "themes/catppuccin-no-italics-mauve.json"
+		},
+		"Catppuccin Macchiato": {
+			"extension": "catppuccin-vsc",
+			"path": "themes/catppuccin-macchiato.json"
+		},
+		"Catppuccin Macchiato - No Italics": {
+			"extension": "catppuccin",
+			"path": "themes/catppuccin-no-italics-mauve.json"
+		},
+		"Catppuccin Mocha": {
+			"extension": "catppuccin-vsc",
+			"path": "themes/catppuccin-mocha.json"
+		},
+		"Catppuccin Mocha - No Italics": {
+			"extension": "catppuccin",
+			"path": "themes/catppuccin-no-italics-mauve.json"
+		},
+		"Gruvbox Crisp Anysphere Blend Dark": {
+			"extension": "gruvbox-crisp-themes",
+			"path": "themes/gruvbox-crisp-high-contrast.json"
+		},
+		"Gruvbox Crisp Anysphere Blend Light": {
+			"extension": "gruvbox-crisp-themes",
+			"path": "themes/gruvbox-crisp-high-contrast.json"
+		},
+		"Material-Theme-Darker": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Darker-High-Contrast": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Default": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Default-High-Contrast": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Lighter": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Lighter-High-Contrast": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Ocean": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Ocean-High-Contrast": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Palenight": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Material-Theme-Palenight-High-Contrast": {
+			"extension": "vsc-material-theme",
+			"path": "themes/material-theme.json"
+		},
+		"Rosé Pine": {
+			"extension": "rose-pine-theme",
+			"path": "themes/rose-pine.json"
+		},
+		"Rosé Pine Dawn": {
+			"extension": "rose-pine-theme",
+			"path": "themes/rose-pine-dawn.json"
+		},
+		"Rosé Pine Moon": {
+			"extension": "rose-pine-theme",
+			"path": "themes/rose-pine-moon.json"
+		},
+		"Serendipity Midnight": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"Serendipity Midnight - No Italics": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"Serendipity Midnight Minimal": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"Serendipity Midnight Minimal - No Italics": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"Serendipity Morning": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"Serendipity Morning - No Italics": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"Serendipity Sunset": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"Serendipity Sunset - No Italics": {
+			"extension": "serendipity",
+			"path": "themes/serendipity.json"
+		},
+		"absent": {
+			"extension": "rainglow",
+			"path": "themes/absent.json"
+		},
+		"absent-contrast": {
+			"extension": "rainglow",
+			"path": "themes/absent.json"
+		},
+		"absent-light": {
+			"extension": "rainglow",
+			"path": "themes/absent.json"
+		},
+		"allure": {
+			"extension": "rainglow",
+			"path": "themes/allure.json"
+		},
+		"allure-contrast": {
+			"extension": "rainglow",
+			"path": "themes/allure.json"
+		},
+		"allure-light": {
+			"extension": "rainglow",
+			"path": "themes/allure.json"
+		},
+		"arstotzka": {
+			"extension": "rainglow",
+			"path": "themes/arstotzka.json"
+		},
+		"arstotzka-contrast": {
+			"extension": "rainglow",
+			"path": "themes/arstotzka.json"
+		},
+		"arstotzka-light": {
+			"extension": "rainglow",
+			"path": "themes/arstotzka.json"
+		},
+		"azure": {
+			"extension": "rainglow",
+			"path": "themes/azure.json"
+		},
+		"azure-contrast": {
+			"extension": "rainglow",
+			"path": "themes/azure.json"
+		},
+		"azure-light": {
+			"extension": "rainglow",
+			"path": "themes/azure.json"
+		},
+		"banner": {
+			"extension": "rainglow",
+			"path": "themes/banner.json"
+		},
+		"banner-contrast": {
+			"extension": "rainglow",
+			"path": "themes/banner.json"
+		},
+		"banner-light": {
+			"extension": "rainglow",
+			"path": "themes/banner.json"
+		},
+		"blink": {
+			"extension": "rainglow",
+			"path": "themes/blink.json"
+		},
+		"blink-contrast": {
+			"extension": "rainglow",
+			"path": "themes/blink.json"
+		},
+		"blink-light": {
+			"extension": "rainglow",
+			"path": "themes/blink.json"
+		},
+		"bold": {
+			"extension": "rainglow",
+			"path": "themes/bold.json"
+		},
+		"bold-contrast": {
+			"extension": "rainglow",
+			"path": "themes/bold.json"
+		},
+		"bold-light": {
+			"extension": "rainglow",
+			"path": "themes/bold.json"
+		},
+		"boxuk": {
+			"extension": "rainglow",
+			"path": "themes/boxuk.json"
+		},
+		"boxuk-contrast": {
+			"extension": "rainglow",
+			"path": "themes/boxuk.json"
+		},
+		"boxuk-light": {
+			"extension": "rainglow",
+			"path": "themes/boxuk.json"
+		},
+		"brave": {
+			"extension": "rainglow",
+			"path": "themes/brave.json"
+		},
+		"brave-contrast": {
+			"extension": "rainglow",
+			"path": "themes/brave.json"
+		},
+		"brave-light": {
+			"extension": "rainglow",
+			"path": "themes/brave.json"
+		},
+		"carbonight": {
+			"extension": "rainglow",
+			"path": "themes/carbonight.json"
+		},
+		"carbonight-contrast": {
+			"extension": "rainglow",
+			"path": "themes/carbonight.json"
+		},
+		"carbonight-light": {
+			"extension": "rainglow",
+			"path": "themes/carbonight.json"
+		},
+		"chocolate": {
+			"extension": "rainglow",
+			"path": "themes/chocolate.json"
+		},
+		"chocolate-contrast": {
+			"extension": "rainglow",
+			"path": "themes/chocolate.json"
+		},
+		"chocolate-light": {
+			"extension": "rainglow",
+			"path": "themes/chocolate.json"
+		},
+		"codecourse": {
+			"extension": "rainglow",
+			"path": "themes/codecourse.json"
+		},
+		"codecourse-contrast": {
+			"extension": "rainglow",
+			"path": "themes/codecourse.json"
+		},
+		"codecourse-light": {
+			"extension": "rainglow",
+			"path": "themes/codecourse.json"
+		},
+		"coffee": {
+			"extension": "rainglow",
+			"path": "themes/coffee.json"
+		},
+		"coffee-contrast": {
+			"extension": "rainglow",
+			"path": "themes/coffee.json"
+		},
+		"coffee-light": {
+			"extension": "rainglow",
+			"path": "themes/coffee.json"
+		},
+		"comrade": {
+			"extension": "rainglow",
+			"path": "themes/comrade.json"
+		},
+		"comrade-contrast": {
+			"extension": "rainglow",
+			"path": "themes/comrade.json"
+		},
+		"comrade-light": {
+			"extension": "rainglow",
+			"path": "themes/comrade.json"
+		},
+		"crackpot": {
+			"extension": "rainglow",
+			"path": "themes/crackpot.json"
+		},
+		"crackpot-contrast": {
+			"extension": "rainglow",
+			"path": "themes/crackpot.json"
+		},
+		"crackpot-light": {
+			"extension": "rainglow",
+			"path": "themes/crackpot.json"
+		},
+		"crisp": {
+			"extension": "rainglow",
+			"path": "themes/crisp.json"
+		},
+		"crisp-contrast": {
+			"extension": "rainglow",
+			"path": "themes/crisp.json"
+		},
+		"crisp-light": {
+			"extension": "rainglow",
+			"path": "themes/crisp.json"
+		},
+		"dare": {
+			"extension": "rainglow",
+			"path": "themes/dare.json"
+		},
+		"dare-contrast": {
+			"extension": "rainglow",
+			"path": "themes/dare.json"
+		},
+		"dare-light": {
+			"extension": "rainglow",
+			"path": "themes/dare.json"
+		},
+		"darkside": {
+			"extension": "rainglow",
+			"path": "themes/darkside.json"
+		},
+		"darkside-contrast": {
+			"extension": "rainglow",
+			"path": "themes/darkside.json"
+		},
+		"darkside-light": {
+			"extension": "rainglow",
+			"path": "themes/darkside.json"
+		},
+		"downpour": {
+			"extension": "rainglow",
+			"path": "themes/downpour.json"
+		},
+		"downpour-contrast": {
+			"extension": "rainglow",
+			"path": "themes/downpour.json"
+		},
+		"downpour-light": {
+			"extension": "rainglow",
+			"path": "themes/downpour.json"
+		},
+		"earthsong": {
+			"extension": "rainglow",
+			"path": "themes/earthsong.json"
+		},
+		"earthsong-contrast": {
+			"extension": "rainglow",
+			"path": "themes/earthsong.json"
+		},
+		"earthsong-light": {
+			"extension": "rainglow",
+			"path": "themes/earthsong.json"
+		},
+		"fodder": {
+			"extension": "rainglow",
+			"path": "themes/fodder.json"
+		},
+		"fodder-contrast": {
+			"extension": "rainglow",
+			"path": "themes/fodder.json"
+		},
+		"fodder-light": {
+			"extension": "rainglow",
+			"path": "themes/fodder.json"
+		},
+		"frantic": {
+			"extension": "rainglow",
+			"path": "themes/frantic.json"
+		},
+		"frantic-contrast": {
+			"extension": "rainglow",
+			"path": "themes/frantic.json"
+		},
+		"frantic-light": {
+			"extension": "rainglow",
+			"path": "themes/frantic.json"
+		},
+		"freshcut": {
+			"extension": "rainglow",
+			"path": "themes/freshcut.json"
+		},
+		"freshcut-contrast": {
+			"extension": "rainglow",
+			"path": "themes/freshcut.json"
+		},
+		"freshcut-light": {
+			"extension": "rainglow",
+			"path": "themes/freshcut.json"
+		},
+		"friction": {
+			"extension": "rainglow",
+			"path": "themes/friction.json"
+		},
+		"friction-contrast": {
+			"extension": "rainglow",
+			"path": "themes/friction.json"
+		},
+		"friction-light": {
+			"extension": "rainglow",
+			"path": "themes/friction.json"
+		},
+		"frontier": {
+			"extension": "rainglow",
+			"path": "themes/frontier.json"
+		},
+		"frontier-contrast": {
+			"extension": "rainglow",
+			"path": "themes/frontier.json"
+		},
+		"frontier-light": {
+			"extension": "rainglow",
+			"path": "themes/frontier.json"
+		},
+		"github": {
+			"extension": "rainglow",
+			"path": "themes/github.json"
+		},
+		"github-contrast": {
+			"extension": "rainglow",
+			"path": "themes/github.json"
+		},
+		"github-light": {
+			"extension": "rainglow",
+			"path": "themes/github.json"
+		},
+		"glance": {
+			"extension": "rainglow",
+			"path": "themes/glance.json"
+		},
+		"glance-contrast": {
+			"extension": "rainglow",
+			"path": "themes/glance.json"
+		},
+		"glance-light": {
+			"extension": "rainglow",
+			"path": "themes/glance.json"
+		},
+		"gloom": {
+			"extension": "rainglow",
+			"path": "themes/gloom.json"
+		},
+		"gloom-contrast": {
+			"extension": "rainglow",
+			"path": "themes/gloom.json"
+		},
+		"gloom-light": {
+			"extension": "rainglow",
+			"path": "themes/gloom.json"
+		},
+		"glowfish": {
+			"extension": "rainglow",
+			"path": "themes/glowfish.json"
+		},
+		"glowfish-contrast": {
+			"extension": "rainglow",
+			"path": "themes/glowfish.json"
+		},
+		"glowfish-light": {
+			"extension": "rainglow",
+			"path": "themes/glowfish.json"
+		},
+		"goldfish": {
+			"extension": "rainglow",
+			"path": "themes/goldfish.json"
+		},
+		"goldfish-light": {
+			"extension": "rainglow",
+			"path": "themes/goldfish.json"
+		},
+		"grunge": {
+			"extension": "rainglow",
+			"path": "themes/grunge.json"
+		},
+		"grunge-contrast": {
+			"extension": "rainglow",
+			"path": "themes/grunge.json"
+		},
+		"grunge-light": {
+			"extension": "rainglow",
+			"path": "themes/grunge.json"
+		},
+		"halflife": {
+			"extension": "rainglow",
+			"path": "themes/halflife.json"
+		},
+		"halflife-contrast": {
+			"extension": "rainglow",
+			"path": "themes/halflife.json"
+		},
+		"halflife-light": {
+			"extension": "rainglow",
+			"path": "themes/halflife.json"
+		},
+		"hawaii": {
+			"extension": "rainglow",
+			"path": "themes/hawaii.json"
+		},
+		"hawaii-contrast": {
+			"extension": "rainglow",
+			"path": "themes/hawaii.json"
+		},
+		"hawaii-light": {
+			"extension": "rainglow",
+			"path": "themes/hawaii.json"
+		},
+		"heroku": {
+			"extension": "rainglow",
+			"path": "themes/heroku.json"
+		},
+		"heroku-contrast": {
+			"extension": "rainglow",
+			"path": "themes/heroku.json"
+		},
+		"heroku-light": {
+			"extension": "rainglow",
+			"path": "themes/heroku.json"
+		},
+		"hive": {
+			"extension": "rainglow",
+			"path": "themes/hive.json"
+		},
+		"hive-contrast": {
+			"extension": "rainglow",
+			"path": "themes/hive.json"
+		},
+		"hive-light": {
+			"extension": "rainglow",
+			"path": "themes/hive.json"
+		},
+		"horizon": {
+			"extension": "rainglow",
+			"path": "themes/horizon.json"
+		},
+		"horizon-contrast": {
+			"extension": "rainglow",
+			"path": "themes/horizon.json"
+		},
+		"horizon-light": {
+			"extension": "rainglow",
+			"path": "themes/horizon.json"
+		},
+		"hub": {
+			"extension": "rainglow",
+			"path": "themes/hub.json"
+		},
+		"hub-contrast": {
+			"extension": "rainglow",
+			"path": "themes/hub.json"
+		},
+		"hub-light": {
+			"extension": "rainglow",
+			"path": "themes/hub.json"
+		},
+		"hyrule": {
+			"extension": "rainglow",
+			"path": "themes/hyrule.json"
+		},
+		"hyrule-contrast": {
+			"extension": "rainglow",
+			"path": "themes/hyrule.json"
+		},
+		"hyrule-light": {
+			"extension": "rainglow",
+			"path": "themes/hyrule.json"
+		},
+		"iceberg": {
+			"extension": "rainglow",
+			"path": "themes/iceberg.json"
+		},
+		"iceberg-contrast": {
+			"extension": "rainglow",
+			"path": "themes/iceberg.json"
+		},
+		"iceberg-light": {
+			"extension": "rainglow",
+			"path": "themes/iceberg.json"
+		},
+		"isotope": {
+			"extension": "rainglow",
+			"path": "themes/isotope.json"
+		},
+		"isotope-contrast": {
+			"extension": "rainglow",
+			"path": "themes/isotope.json"
+		},
+		"isotope-light": {
+			"extension": "rainglow",
+			"path": "themes/isotope.json"
+		},
+		"jewel": {
+			"extension": "rainglow",
+			"path": "themes/jewel.json"
+		},
+		"jewel-contrast": {
+			"extension": "rainglow",
+			"path": "themes/jewel.json"
+		},
+		"jewel-light": {
+			"extension": "rainglow",
+			"path": "themes/jewel.json"
+		},
+		"jingle": {
+			"extension": "rainglow",
+			"path": "themes/jingle.json"
+		},
+		"jingle-contrast": {
+			"extension": "rainglow",
+			"path": "themes/jingle.json"
+		},
+		"jingle-light": {
+			"extension": "rainglow",
+			"path": "themes/jingle.json"
+		},
+		"joker": {
+			"extension": "rainglow",
+			"path": "themes/joker.json"
+		},
+		"joker-contrast": {
+			"extension": "rainglow",
+			"path": "themes/joker.json"
+		},
+		"joker-light": {
+			"extension": "rainglow",
+			"path": "themes/joker.json"
+		},
+		"juicy": {
+			"extension": "rainglow",
+			"path": "themes/juicy.json"
+		},
+		"juicy-contrast": {
+			"extension": "rainglow",
+			"path": "themes/juicy.json"
+		},
+		"juicy-light": {
+			"extension": "rainglow",
+			"path": "themes/juicy.json"
+		},
+		"jumper": {
+			"extension": "rainglow",
+			"path": "themes/jumper.json"
+		},
+		"jumper-contrast": {
+			"extension": "rainglow",
+			"path": "themes/jumper.json"
+		},
+		"jumper-light": {
+			"extension": "rainglow",
+			"path": "themes/jumper.json"
+		},
+		"keen": {
+			"extension": "rainglow",
+			"path": "themes/keen.json"
+		},
+		"keen-contrast": {
+			"extension": "rainglow",
+			"path": "themes/keen.json"
+		},
+		"keen-light": {
+			"extension": "rainglow",
+			"path": "themes/keen.json"
+		},
+		"kiwi": {
+			"extension": "rainglow",
+			"path": "themes/kiwi.json"
+		},
+		"kiwi-contrast": {
+			"extension": "rainglow",
+			"path": "themes/kiwi.json"
+		},
+		"kiwi-light": {
+			"extension": "rainglow",
+			"path": "themes/kiwi.json"
+		},
+		"laracasts": {
+			"extension": "rainglow",
+			"path": "themes/laracasts.json"
+		},
+		"laracasts-contrast": {
+			"extension": "rainglow",
+			"path": "themes/laracasts.json"
+		},
+		"laracasts-light": {
+			"extension": "rainglow",
+			"path": "themes/laracasts.json"
+		},
+		"laravel": {
+			"extension": "rainglow",
+			"path": "themes/laravel.json"
+		},
+		"laravel-contrast": {
+			"extension": "rainglow",
+			"path": "themes/laravel.json"
+		},
+		"laravel-light": {
+			"extension": "rainglow",
+			"path": "themes/laravel.json"
+		},
+		"lavender": {
+			"extension": "rainglow",
+			"path": "themes/lavender.json"
+		},
+		"lavender-contrast": {
+			"extension": "rainglow",
+			"path": "themes/lavender.json"
+		},
+		"lavender-light": {
+			"extension": "rainglow",
+			"path": "themes/lavender.json"
+		},
+		"legacy": {
+			"extension": "rainglow",
+			"path": "themes/legacy.json"
+		},
+		"legacy-contrast": {
+			"extension": "rainglow",
+			"path": "themes/legacy.json"
+		},
+		"legacy-light": {
+			"extension": "rainglow",
+			"path": "themes/legacy.json"
+		},
+		"lichen": {
+			"extension": "rainglow",
+			"path": "themes/lichen.json"
+		},
+		"lichen-contrast": {
+			"extension": "rainglow",
+			"path": "themes/lichen.json"
+		},
+		"lichen-light": {
+			"extension": "rainglow",
+			"path": "themes/lichen.json"
+		},
+		"loyal": {
+			"extension": "rainglow",
+			"path": "themes/loyal.json"
+		},
+		"loyal-contrast": {
+			"extension": "rainglow",
+			"path": "themes/loyal.json"
+		},
+		"loyal-light": {
+			"extension": "rainglow",
+			"path": "themes/loyal.json"
+		},
+		"mauve": {
+			"extension": "rainglow",
+			"path": "themes/mauve.json"
+		},
+		"mauve-contrast": {
+			"extension": "rainglow",
+			"path": "themes/mauve.json"
+		},
+		"mauve-light": {
+			"extension": "rainglow",
+			"path": "themes/mauve.json"
+		},
+		"mellow": {
+			"extension": "rainglow",
+			"path": "themes/mellow.json"
+		},
+		"mellow-contrast": {
+			"extension": "rainglow",
+			"path": "themes/mellow.json"
+		},
+		"mellow-light": {
+			"extension": "rainglow",
+			"path": "themes/mellow.json"
+		},
+		"mintchoc": {
+			"extension": "rainglow",
+			"path": "themes/mintchoc.json"
+		},
+		"mintchoc-contrast": {
+			"extension": "rainglow",
+			"path": "themes/mintchoc.json"
+		},
+		"mintchoc-light": {
+			"extension": "rainglow",
+			"path": "themes/mintchoc.json"
+		},
+		"monzo": {
+			"extension": "rainglow",
+			"path": "themes/monzo.json"
+		},
+		"monzo-contrast": {
+			"extension": "rainglow",
+			"path": "themes/monzo.json"
+		},
+		"monzo-light": {
+			"extension": "rainglow",
+			"path": "themes/monzo.json"
+		},
+		"morass": {
+			"extension": "rainglow",
+			"path": "themes/morass.json"
+		},
+		"morass-contrast": {
+			"extension": "rainglow",
+			"path": "themes/morass.json"
+		},
+		"morass-light": {
+			"extension": "rainglow",
+			"path": "themes/morass.json"
+		},
+		"mud": {
+			"extension": "rainglow",
+			"path": "themes/mud.json"
+		},
+		"mud-contrast": {
+			"extension": "rainglow",
+			"path": "themes/mud.json"
+		},
+		"mud-light": {
+			"extension": "rainglow",
+			"path": "themes/mud.json"
+		},
+		"newton": {
+			"extension": "rainglow",
+			"path": "themes/newton.json"
+		},
+		"newton-contrast": {
+			"extension": "rainglow",
+			"path": "themes/newton.json"
+		},
+		"newton-light": {
+			"extension": "rainglow",
+			"path": "themes/newton.json"
+		},
+		"otakon": {
+			"extension": "rainglow",
+			"path": "themes/otakon.json"
+		},
+		"otakon-contrast": {
+			"extension": "rainglow",
+			"path": "themes/otakon.json"
+		},
+		"otakon-light": {
+			"extension": "rainglow",
+			"path": "themes/otakon.json"
+		},
+		"overflow": {
+			"extension": "rainglow",
+			"path": "themes/overflow.json"
+		},
+		"overflow-contrast": {
+			"extension": "rainglow",
+			"path": "themes/overflow.json"
+		},
+		"overflow-light": {
+			"extension": "rainglow",
+			"path": "themes/overflow.json"
+		},
+		"pastel": {
+			"extension": "rainglow",
+			"path": "themes/pastel.json"
+		},
+		"pastel-contrast": {
+			"extension": "rainglow",
+			"path": "themes/pastel.json"
+		},
+		"pastel-light": {
+			"extension": "rainglow",
+			"path": "themes/pastel.json"
+		},
+		"patriot": {
+			"extension": "rainglow",
+			"path": "themes/patriot.json"
+		},
+		"patriot-contrast": {
+			"extension": "rainglow",
+			"path": "themes/patriot.json"
+		},
+		"patriot-light": {
+			"extension": "rainglow",
+			"path": "themes/patriot.json"
+		},
+		"peacock": {
+			"extension": "rainglow",
+			"path": "themes/peacock.json"
+		},
+		"peacock-contrast": {
+			"extension": "rainglow",
+			"path": "themes/peacock.json"
+		},
+		"peacock-light": {
+			"extension": "rainglow",
+			"path": "themes/peacock.json"
+		},
+		"peacocks-in-space": {
+			"extension": "rainglow",
+			"path": "themes/peacocks-in-space.json"
+		},
+		"peacocks-in-space-contrast": {
+			"extension": "rainglow",
+			"path": "themes/peacocks-in-space.json"
+		},
+		"peacocks-in-space-light": {
+			"extension": "rainglow",
+			"path": "themes/peacocks-in-space.json"
+		},
+		"peel": {
+			"extension": "rainglow",
+			"path": "themes/peel.json"
+		},
+		"peel-contrast": {
+			"extension": "rainglow",
+			"path": "themes/peel.json"
+		},
+		"peel-light": {
+			"extension": "rainglow",
+			"path": "themes/peel.json"
+		},
+		"penitent": {
+			"extension": "rainglow",
+			"path": "themes/penitent.json"
+		},
+		"penitent-contrast": {
+			"extension": "rainglow",
+			"path": "themes/penitent.json"
+		},
+		"penitent-light": {
+			"extension": "rainglow",
+			"path": "themes/penitent.json"
+		},
+		"piggy": {
+			"extension": "rainglow",
+			"path": "themes/piggy.json"
+		},
+		"piggy-contrast": {
+			"extension": "rainglow",
+			"path": "themes/piggy.json"
+		},
+		"piggy-light": {
+			"extension": "rainglow",
+			"path": "themes/piggy.json"
+		},
+		"pleasure": {
+			"extension": "rainglow",
+			"path": "themes/pleasure.json"
+		},
+		"pleasure-contrast": {
+			"extension": "rainglow",
+			"path": "themes/pleasure.json"
+		},
+		"pleasure-light": {
+			"extension": "rainglow",
+			"path": "themes/pleasure.json"
+		},
+		"potpourri": {
+			"extension": "rainglow",
+			"path": "themes/potpourri.json"
+		},
+		"potpourri-contrast": {
+			"extension": "rainglow",
+			"path": "themes/potpourri.json"
+		},
+		"potpourri-light": {
+			"extension": "rainglow",
+			"path": "themes/potpourri.json"
+		},
+		"prime": {
+			"extension": "rainglow",
+			"path": "themes/prime.json"
+		},
+		"prime-contrast": {
+			"extension": "rainglow",
+			"path": "themes/prime.json"
+		},
+		"prime-light": {
+			"extension": "rainglow",
+			"path": "themes/prime.json"
+		},
+		"rainbow": {
+			"extension": "rainglow",
+			"path": "themes/rainbow.json"
+		},
+		"rainbow-contrast": {
+			"extension": "rainglow",
+			"path": "themes/rainbow.json"
+		},
+		"rainbow-light": {
+			"extension": "rainglow",
+			"path": "themes/rainbow.json"
+		},
+		"rebellion": {
+			"extension": "rainglow",
+			"path": "themes/rebellion.json"
+		},
+		"rebellion-contrast": {
+			"extension": "rainglow",
+			"path": "themes/rebellion.json"
+		},
+		"rebellion-light": {
+			"extension": "rainglow",
+			"path": "themes/rebellion.json"
+		},
+		"revelation": {
+			"extension": "rainglow",
+			"path": "themes/revelation.json"
+		},
+		"revelation-contrast": {
+			"extension": "rainglow",
+			"path": "themes/revelation.json"
+		},
+		"revelation-light": {
+			"extension": "rainglow",
+			"path": "themes/revelation.json"
+		},
+		"scorch": {
+			"extension": "rainglow",
+			"path": "themes/scorch.json"
+		},
+		"scorch-contrast": {
+			"extension": "rainglow",
+			"path": "themes/scorch.json"
+		},
+		"scorch-light": {
+			"extension": "rainglow",
+			"path": "themes/scorch.json"
+		},
+		"service": {
+			"extension": "rainglow",
+			"path": "themes/service.json"
+		},
+		"service-contrast": {
+			"extension": "rainglow",
+			"path": "themes/service.json"
+		},
+		"service-light": {
+			"extension": "rainglow",
+			"path": "themes/service.json"
+		},
+		"shrek": {
+			"extension": "rainglow",
+			"path": "themes/shrek.json"
+		},
+		"shrek-contrast": {
+			"extension": "rainglow",
+			"path": "themes/shrek.json"
+		},
+		"shrek-light": {
+			"extension": "rainglow",
+			"path": "themes/shrek.json"
+		},
+		"slate": {
+			"extension": "rainglow",
+			"path": "themes/slate.json"
+		},
+		"slate-contrast": {
+			"extension": "rainglow",
+			"path": "themes/slate.json"
+		},
+		"slate-light": {
+			"extension": "rainglow",
+			"path": "themes/slate.json"
+		},
+		"slime": {
+			"extension": "rainglow",
+			"path": "themes/slime.json"
+		},
+		"slime-contrast": {
+			"extension": "rainglow",
+			"path": "themes/slime.json"
+		},
+		"slime-light": {
+			"extension": "rainglow",
+			"path": "themes/slime.json"
+		},
+		"snappy": {
+			"extension": "rainglow",
+			"path": "themes/snappy.json"
+		},
+		"snappy-contrast": {
+			"extension": "rainglow",
+			"path": "themes/snappy.json"
+		},
+		"snappy-light": {
+			"extension": "rainglow",
+			"path": "themes/snappy.json"
+		},
+		"solarflare": {
+			"extension": "rainglow",
+			"path": "themes/solarflare.json"
+		},
+		"solarflare-contrast": {
+			"extension": "rainglow",
+			"path": "themes/solarflare.json"
+		},
+		"solarflare-light": {
+			"extension": "rainglow",
+			"path": "themes/solarflare.json"
+		},
+		"soup": {
+			"extension": "rainglow",
+			"path": "themes/soup.json"
+		},
+		"soup-contrast": {
+			"extension": "rainglow",
+			"path": "themes/soup.json"
+		},
+		"soup-light": {
+			"extension": "rainglow",
+			"path": "themes/soup.json"
+		},
+		"sourlick": {
+			"extension": "rainglow",
+			"path": "themes/sourlick.json"
+		},
+		"sourlick-contrast": {
+			"extension": "rainglow",
+			"path": "themes/sourlick.json"
+		},
+		"sourlick-light": {
+			"extension": "rainglow",
+			"path": "themes/sourlick.json"
+		},
+		"spearmint": {
+			"extension": "rainglow",
+			"path": "themes/spearmint.json"
+		},
+		"spearmint-contrast": {
+			"extension": "rainglow",
+			"path": "themes/spearmint.json"
+		},
+		"spearmint-light": {
+			"extension": "rainglow",
+			"path": "themes/spearmint.json"
+		},
+		"spitfire": {
+			"extension": "rainglow",
+			"path": "themes/spitfire.json"
+		},
+		"spitfire-contrast": {
+			"extension": "rainglow",
+			"path": "themes/spitfire.json"
+		},
+		"spitfire-light": {
+			"extension": "rainglow",
+			"path": "themes/spitfire.json"
+		},
+		"stark": {
+			"extension": "rainglow",
+			"path": "themes/stark.json"
+		},
+		"stark-contrast": {
+			"extension": "rainglow",
+			"path": "themes/stark.json"
+		},
+		"stark-light": {
+			"extension": "rainglow",
+			"path": "themes/stark.json"
+		},
+		"stasis": {
+			"extension": "rainglow",
+			"path": "themes/stasis.json"
+		},
+		"stasis-contrast": {
+			"extension": "rainglow",
+			"path": "themes/stasis.json"
+		},
+		"stasis-light": {
+			"extension": "rainglow",
+			"path": "themes/stasis.json"
+		},
+		"stealth": {
+			"extension": "rainglow",
+			"path": "themes/stealth.json"
+		},
+		"stealth-contrast": {
+			"extension": "rainglow",
+			"path": "themes/stealth.json"
+		},
+		"stealth-light": {
+			"extension": "rainglow",
+			"path": "themes/stealth.json"
+		},
+		"storm": {
+			"extension": "rainglow",
+			"path": "themes/storm.json"
+		},
+		"storm-contrast": {
+			"extension": "rainglow",
+			"path": "themes/storm.json"
+		},
+		"storm-light": {
+			"extension": "rainglow",
+			"path": "themes/storm.json"
+		},
+		"super": {
+			"extension": "rainglow",
+			"path": "themes/super.json"
+		},
+		"super-contrast": {
+			"extension": "rainglow",
+			"path": "themes/super.json"
+		},
+		"super-light": {
+			"extension": "rainglow",
+			"path": "themes/super.json"
+		},
+		"tame": {
+			"extension": "rainglow",
+			"path": "themes/tame.json"
+		},
+		"tame-contrast": {
+			"extension": "rainglow",
+			"path": "themes/tame.json"
+		},
+		"tame-light": {
+			"extension": "rainglow",
+			"path": "themes/tame.json"
+		},
+		"tetra": {
+			"extension": "rainglow",
+			"path": "themes/tetra.json"
+		},
+		"tetra-contrast": {
+			"extension": "rainglow",
+			"path": "themes/tetra.json"
+		},
+		"tetra-light": {
+			"extension": "rainglow",
+			"path": "themes/tetra.json"
+		},
+		"tickle": {
+			"extension": "rainglow",
+			"path": "themes/tickle.json"
+		},
+		"tickle-contrast": {
+			"extension": "rainglow",
+			"path": "themes/tickle.json"
+		},
+		"tickle-light": {
+			"extension": "rainglow",
+			"path": "themes/tickle.json"
+		},
+		"tonic": {
+			"extension": "rainglow",
+			"path": "themes/tonic.json"
+		},
+		"tonic-contrast": {
+			"extension": "rainglow",
+			"path": "themes/tonic.json"
+		},
+		"tonic-light": {
+			"extension": "rainglow",
+			"path": "themes/tonic.json"
+		},
+		"tribal": {
+			"extension": "rainglow",
+			"path": "themes/tribal.json"
+		},
+		"tribal-contrast": {
+			"extension": "rainglow",
+			"path": "themes/tribal.json"
+		},
+		"tribal-light": {
+			"extension": "rainglow",
+			"path": "themes/tribal.json"
+		},
+		"tron": {
+			"extension": "rainglow",
+			"path": "themes/tron.json"
+		},
+		"tron-contrast": {
+			"extension": "rainglow",
+			"path": "themes/tron.json"
+		},
+		"tron-light": {
+			"extension": "rainglow",
+			"path": "themes/tron.json"
+		},
+		"turnip": {
+			"extension": "rainglow",
+			"path": "themes/turnip.json"
+		},
+		"turnip-contrast": {
+			"extension": "rainglow",
+			"path": "themes/turnip.json"
+		},
+		"turnip-light": {
+			"extension": "rainglow",
+			"path": "themes/turnip.json"
+		},
+		"tweed": {
+			"extension": "rainglow",
+			"path": "themes/tweed.json"
+		},
+		"tweed-contrast": {
+			"extension": "rainglow",
+			"path": "themes/tweed.json"
+		},
+		"tweed-light": {
+			"extension": "rainglow",
+			"path": "themes/tweed.json"
+		},
+		"userscape": {
+			"extension": "rainglow",
+			"path": "themes/userscape.json"
+		},
+		"userscape-contrast": {
+			"extension": "rainglow",
+			"path": "themes/userscape.json"
+		},
+		"userscape-light": {
+			"extension": "rainglow",
+			"path": "themes/userscape.json"
+		},
+		"vegetable": {
+			"extension": "rainglow",
+			"path": "themes/vegetable.json"
+		},
+		"vegetable-contrast": {
+			"extension": "rainglow",
+			"path": "themes/vegetable.json"
+		},
+		"vegetable-light": {
+			"extension": "rainglow",
+			"path": "themes/vegetable.json"
+		},
+		"violaceous": {
+			"extension": "rainglow",
+			"path": "themes/violaceous.json"
+		},
+		"violaceous-contrast": {
+			"extension": "rainglow",
+			"path": "themes/violaceous.json"
+		},
+		"violaceous-light": {
+			"extension": "rainglow",
+			"path": "themes/violaceous.json"
+		},
+		"vision-colorblind": {
+			"extension": "rainglow",
+			"path": "themes/vision.json"
+		},
+		"vision-light-colorblind": {
+			"extension": "rainglow",
+			"path": "themes/vision.json"
+		},
+		"volatile": {
+			"extension": "rainglow",
+			"path": "themes/volatile.json"
+		},
+		"volatile-contrast": {
+			"extension": "rainglow",
+			"path": "themes/volatile.json"
+		},
+		"volatile-light": {
+			"extension": "rainglow",
+			"path": "themes/volatile.json"
+		},
+		"warlock": {
+			"extension": "rainglow",
+			"path": "themes/warlock.json"
+		},
+		"warlock-contrast": {
+			"extension": "rainglow",
+			"path": "themes/warlock.json"
+		},
+		"warlock-light": {
+			"extension": "rainglow",
+			"path": "themes/warlock.json"
+		},
+		"waste": {
+			"extension": "rainglow",
+			"path": "themes/waste.json"
+		},
+		"waste-contrast": {
+			"extension": "rainglow",
+			"path": "themes/waste.json"
+		},
+		"waste-light": {
+			"extension": "rainglow",
+			"path": "themes/waste.json"
+		},
+		"yitzchok": {
+			"extension": "rainglow",
+			"path": "themes/yitzchok.json"
+		},
+		"yitzchok-contrast": {
+			"extension": "rainglow",
+			"path": "themes/yitzchok.json"
+		},
+		"yitzchok-light": {
+			"extension": "rainglow",
+			"path": "themes/yitzchok.json"
+		},
+		"yule": {
+			"extension": "rainglow",
+			"path": "themes/yule.json"
+		},
+		"yule-contrast": {
+			"extension": "rainglow",
+			"path": "themes/yule.json"
+		},
+		"yule-light": {
+			"extension": "rainglow",
+			"path": "themes/yule.json"
+		},
+		"zacks": {
+			"extension": "rainglow",
+			"path": "themes/zacks.json"
+		},
+		"zacks-contrast": {
+			"extension": "rainglow",
+			"path": "themes/zacks.json"
+		},
+		"zacks-light": {
+			"extension": "rainglow",
+			"path": "themes/zacks.json"
+		}
+	},
+	"icon_themes": {
+		"Bearded Icon Theme": {
+			"extension": "bearded-icon-theme",
+			"path": "icon_themes/bearded-icon-theme.json"
+		},
+		"Catppuccin Frappé": {
+			"extension": "catppuccin-icons",
+			"path": "icon_themes/catppuccin-icons.json"
+		},
+		"Catppuccin Latte": {
+			"extension": "catppuccin-icons",
+			"path": "icon_themes/catppuccin-icons.json"
+		},
+		"Catppuccin Macchiato": {
+			"extension": "catppuccin-icons",
+			"path": "icon_themes/catppuccin-icons.json"
+		},
+		"Catppuccin Mocha": {
+			"extension": "catppuccin-icons",
+			"path": "icon_themes/catppuccin-icons.json"
+		},
+		"Colored Zed Icons Theme Dark": {
+			"extension": "colored-zed-icons-theme",
+			"path": "icon_themes/colored-zed-icons-theme.json"
+		},
+		"Colored Zed Icons Theme Light": {
+			"extension": "colored-zed-icons-theme",
+			"path": "icon_themes/colored-zed-icons-theme.json"
+		},
+		"Serendipity Icons": {
+			"extension": "serendipity",
+			"path": "icon_themes/serendipity-icon-theme.json"
+		},
+		"VSCode Great Icons": {
+			"extension": "vscode-great-icons",
+			"path": "icon_themes/vscode-great-icons.json"
+		}
+	},
+	"languages": {
+		"Diff": {
+			"extension": "git-firefly",
+			"path": "languages/diff",
+			"matcher": {
+				"path_suffixes": ["diff"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "diff"
+		},
+		"Fish": {
+			"extension": "fish",
+			"path": "languages/fish",
+			"matcher": {
+				"path_suffixes": ["fish"],
+				"first_line_pattern": "^#!.*\\bfish\\b"
+			},
+			"hidden": false,
+			"grammar": "fish"
+		},
+		"Git Attributes": {
+			"extension": "git-firefly",
+			"path": "languages/gitattributes",
+			"matcher": {
+				"path_suffixes": [".gitattributes"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "gitattributes"
+		},
+		"Git Commit": {
+			"extension": "git-firefly",
+			"path": "languages/gitcommit",
+			"matcher": {
+				"path_suffixes": [
+					"TAG_EDITMSG",
+					"MERGE_MSG",
+					"COMMIT_EDITMSG",
+					"NOTES_EDITMSG",
+					"EDIT_DESCRIPTION"
+				],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "git_commit"
+		},
+		"Git Config": {
+			"extension": "git-firefly",
+			"path": "languages/gitconfig",
+			"matcher": {
+				"path_suffixes": [".gitconfig", ".gitmodules"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "git_config"
+		},
+		"Git Ignore": {
+			"extension": "git-firefly",
+			"path": "languages/gitignore",
+			"matcher": {
+				"path_suffixes": [".gitignore", ".dockerignore"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "gitignore"
+		},
+		"Git Rebase": {
+			"extension": "git-firefly",
+			"path": "languages/gitrebase",
+			"matcher": {
+				"path_suffixes": ["git-rebase-todo"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "git_rebase"
+		},
+		"HTML": {
+			"extension": "html",
+			"path": "languages/html",
+			"matcher": {
+				"path_suffixes": ["html", "htm", "shtml"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "html"
+		},
+		"Just": {
+			"extension": "just",
+			"path": "languages/just",
+			"matcher": {
+				"path_suffixes": ["justfile", "Justfile", "JUSTFILE", "just"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "just"
+		},
+		"SQL": {
+			"extension": "sql",
+			"path": "languages/sql",
+			"matcher": {
+				"path_suffixes": ["sql"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "sql"
+		},
+		"TCL": {
+			"extension": "tcl",
+			"path": "languages/tcl",
+			"matcher": {
+				"path_suffixes": ["tcl", "kb"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "tcl"
+		},
+		"TOML": {
+			"extension": "toml",
+			"path": "languages/toml",
+			"matcher": {
+				"path_suffixes": ["Cargo.lock", "toml", "Pipfile", "uv.lock"],
+				"first_line_pattern": null
+			},
+			"hidden": false,
+			"grammar": "toml"
+		}
+	}
+}

@@ -3,6 +3,8 @@
 //! information about the extension's name and author to populate
 //! the VSCode equivalent.
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::ThemeFile;
@@ -23,17 +25,32 @@ pub struct ZedManifest {
     #[serde(default)]
     pub(crate) capabilities: Vec<String>,
     #[serde(default)]
-    pub(crate) lib: toml::Table,
+    pub(crate) lib: Library,
     #[serde(default)]
-    pub(crate) grammars: toml::Table,
+    pub(crate) grammars: HashMap<String, Grammar>,
     #[serde(default)]
-    pub(crate) language_servers: toml::Table,
+    pub(crate) language_servers: serde_json::Value,
     #[serde(default)]
-    pub(crate) context_servers: toml::Table,
+    pub(crate) context_servers: serde_json::Value,
     #[serde(default)]
-    pub(crate) slash_commands: toml::Table,
+    pub(crate) slash_commands: serde_json::Value,
     #[serde(default)]
-    pub(crate) indexed_docs_providers: toml::Table,
+    pub(crate) indexed_docs_providers: serde_json::Value,
+    #[serde(default)]
+    pub(crate) snippets: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub(crate) struct Library {
+    kind: Option<String>,
+    version: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub(crate) struct Grammar {
+    repository: String,
+    rev: String,
+    path: Option<String>,
 }
 
 impl Default for ZedManifest {
@@ -50,12 +67,13 @@ impl Default for ZedManifest {
             icon_themes: Vec::new(),
             languages: Vec::new(),
             capabilities: Vec::new(),
-            lib: toml::Table::new(),
-            grammars: toml::Table::new(),
-            language_servers: toml::Table::new(),
-            context_servers: toml::Table::new(),
-            slash_commands: toml::Table::new(),
-            indexed_docs_providers: toml::Table::new(),
+            lib: Library { kind: None, version: None },
+            grammars: HashMap::new(),
+            language_servers: serde_json::Value::Object(serde_json::Map::new()),
+            context_servers: serde_json::Value::Object(serde_json::Map::new()),
+            slash_commands: serde_json::Value::Object(serde_json::Map::new()),
+            indexed_docs_providers: serde_json::Value::Object(serde_json::Map::new()),
+            snippets: None,
         }
     }
 }
