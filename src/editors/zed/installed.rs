@@ -53,12 +53,19 @@ impl InstalledExtensions {
         for family in extension.families() {
             for theme in &family.themes {
                 // Find the corresponding theme file path from the manifest
-                if let Some(theme_path) = extension.manifest().themes().iter()
-                    .find(|path| path.contains(&slug::slugify(&family.name))) {
-                    theme_ptrs.insert(theme.name.clone(), ZedThemeIndex {
-                        extension: id.clone(),
-                        path: theme_path.clone(),
-                    });
+                if let Some(theme_path) = extension
+                    .manifest()
+                    .themes()
+                    .iter()
+                    .find(|path| path.contains(&slug::slugify(&family.name)))
+                {
+                    theme_ptrs.insert(
+                        theme.name.clone(),
+                        ZedThemeIndex {
+                            extension: id.clone(),
+                            path: theme_path.clone(),
+                        },
+                    );
                 }
             }
         }
@@ -68,12 +75,19 @@ impl InstalledExtensions {
         let mut icon_theme_ptrs: HashMap<String, ZedThemeIndex> = HashMap::new();
         for icon_theme in extension.icon_themes() {
             // Find the corresponding icon theme file path from the manifest
-            if let Some(icon_path) = extension.manifest().icon_themes().iter()
-                .find(|path| path.contains(&slug::slugify(&icon_theme.name))) {
-                icon_theme_ptrs.insert(icon_theme.name.clone(), ZedThemeIndex {
-                    extension: id.clone(),
-                    path: icon_path.clone(),
-                });
+            if let Some(icon_path) = extension
+                .manifest()
+                .icon_themes()
+                .iter()
+                .find(|path| path.contains(&slug::slugify(&icon_theme.name)))
+            {
+                icon_theme_ptrs.insert(
+                    icon_theme.name.clone(),
+                    ZedThemeIndex {
+                        extension: id.clone(),
+                        path: icon_path.clone(),
+                    },
+                );
             }
         }
         self.icon_themes.extend(icon_theme_ptrs);
@@ -126,13 +140,12 @@ mod tests {
     fn can_roundtrip_fixture() {
         let fixture =
             InstalledExtensions::new("fixtures/zed/index.json").expect("we expect to be able to read the fixture");
-        
+
         let temp_path = std::env::temp_dir().join("test_index.json");
         fixture.write_to(&temp_path).expect("should be able to write fixture");
-        
-        let reloaded =
-            InstalledExtensions::read(&temp_path).expect("should be able to read written fixture");
-        
+
+        let reloaded = InstalledExtensions::read(&temp_path).expect("should be able to read written fixture");
+
         assert_eq!(fixture.extensions.len(), reloaded.extensions.len());
         std::fs::remove_file(&temp_path).ok();
     }
@@ -146,7 +159,7 @@ mod tests {
             icon_themes: HashMap::new(),
             languages: serde_json::Value::Object(serde_json::Map::new()),
         };
-        
+
         // Verify initial state
         assert_eq!(installed.extensions.len(), 0);
         assert_eq!(installed.themes.len(), 0);

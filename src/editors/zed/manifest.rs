@@ -67,7 +67,10 @@ impl Default for ZedManifest {
             icon_themes: Vec::new(),
             languages: Vec::new(),
             capabilities: Vec::new(),
-            lib: Library { kind: None, version: None },
+            lib: Library {
+                kind: None,
+                version: None,
+            },
             grammars: HashMap::new(),
             language_servers: serde_json::Value::Object(serde_json::Map::new()),
             context_servers: serde_json::Value::Object(serde_json::Map::new()),

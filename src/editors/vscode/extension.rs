@@ -133,19 +133,21 @@ impl VsCodeExtension {
             })
             .collect();
         theme_pointers.sort_by(|left, right| left.label.cmp(&right.label));
-        
+
         // Discover icon themes in the extension directory
         let icon_themes_dir = extpath.join("icons");
         let mut icon_themes = Vec::new();
         let mut icon_theme_pointers = Vec::new();
-        
+
         if icon_themes_dir.exists() {
             // Look for icon theme JSON files
             let icon_theme_files = std::fs::read_dir(&icon_themes_dir)
                 .map_err(ThemeError::IoError)?
                 .filter_map(|entry| entry.ok())
                 .filter(|entry| {
-                    entry.path().extension()
+                    entry
+                        .path()
+                        .extension()
                         .and_then(|ext| ext.to_str())
                         .map(|ext| ext.eq_ignore_ascii_case("json"))
                         .unwrap_or(false)
@@ -156,18 +158,20 @@ impl VsCodeExtension {
                 let icon_theme_path = entry.path();
                 if let Ok(icon_theme) = VsCodeIconTheme::read(&icon_theme_path) {
                     // Create icon theme pointer for the manifest
-                    let relative_path = format!("./icons/{}", 
-                        icon_theme_path.file_name()
+                    let relative_path = format!(
+                        "./icons/{}",
+                        icon_theme_path
+                            .file_name()
                             .and_then(|name| name.to_str())
                             .unwrap_or("icon-theme.json")
                     );
-                    
+
                     let icon_theme_pointer = IconThemePointer {
                         id: slug::slugify(format!("{extension_name}-icons")),
                         label: format!("{extension_name} Icons"),
                         path: relative_path,
                     };
-                    
+
                     icon_theme_pointers.push(icon_theme_pointer);
                     icon_themes.push(icon_theme);
                 }

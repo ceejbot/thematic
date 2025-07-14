@@ -298,10 +298,12 @@ fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
     // Set document highlight colors based on selection
     if let Some(selected) = &zed_style.element_selected {
         if zed_style.editor_document_highlight_read_background.is_none() {
-            zed_style.editor_document_highlight_read_background = Some(format!("{}33", selected.trim_start_matches('#')));
+            zed_style.editor_document_highlight_read_background =
+                Some(format!("{}33", selected.trim_start_matches('#')));
         }
         if zed_style.editor_document_highlight_write_background.is_none() {
-            zed_style.editor_document_highlight_write_background = Some(format!("{}55", selected.trim_start_matches('#')));
+            zed_style.editor_document_highlight_write_background =
+                Some(format!("{}55", selected.trim_start_matches('#')));
         }
     }
 
@@ -395,11 +397,31 @@ fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
 
     // Set corresponding background and border colors for Git status
     for (color, bg_field, border_field) in [
-        (&zed_style.created, &mut zed_style.created_background, &mut zed_style.created_border),
-        (&zed_style.modified, &mut zed_style.modified_background, &mut zed_style.modified_border),
-        (&zed_style.deleted, &mut zed_style.deleted_background, &mut zed_style.deleted_border),
-        (&zed_style.conflict, &mut zed_style.conflict_background, &mut zed_style.conflict_border),
-        (&zed_style.renamed, &mut zed_style.renamed_background, &mut zed_style.renamed_border),
+        (
+            &zed_style.created,
+            &mut zed_style.created_background,
+            &mut zed_style.created_border,
+        ),
+        (
+            &zed_style.modified,
+            &mut zed_style.modified_background,
+            &mut zed_style.modified_border,
+        ),
+        (
+            &zed_style.deleted,
+            &mut zed_style.deleted_background,
+            &mut zed_style.deleted_border,
+        ),
+        (
+            &zed_style.conflict,
+            &mut zed_style.conflict_background,
+            &mut zed_style.conflict_border,
+        ),
+        (
+            &zed_style.renamed,
+            &mut zed_style.renamed_background,
+            &mut zed_style.renamed_border,
+        ),
     ] {
         if let Some(color_val) = color {
             if bg_field.is_none() {
@@ -481,18 +503,18 @@ fn map_textmate_scope_to_zed(scope: &str) -> Option<String> {
         // Comments
         "comment" | "comment.line" | "comment.block" => Some("comment".to_string()),
         "comment.block.documentation" => Some("comment.doc".to_string()),
-        
+
         // Keywords and storage
         "keyword" | "keyword.control" | "keyword.control.flow" => Some("keyword".to_string()),
         "keyword.operator" => Some("operator".to_string()),
         "storage.type" | "storage.modifier" => Some("keyword".to_string()),
-        
+
         // Strings and literals
         "string" | "string.quoted" | "string.quoted.single" | "string.quoted.double" => Some("string".to_string()),
         "string.regexp" | "string.regex" => Some("string.regex".to_string()),
         "string.unquoted" => Some("string".to_string()),
         "string.interpolated" => Some("string".to_string()),
-        
+
         // Numbers and constants
         "constant.numeric" | "constant.numeric.integer" | "constant.numeric.float" => Some("number".to_string()),
         "constant.character" | "constant.character.escape" => Some("string".to_string()),
@@ -500,13 +522,13 @@ fn map_textmate_scope_to_zed(scope: &str) -> Option<String> {
         "constant.language" => Some("boolean".to_string()),
         "constant.language.boolean" => Some("boolean".to_string()),
         "constant.language.null" => Some("constant".to_string()),
-        
+
         // Functions and methods
         "entity.name.function" | "entity.name.function.member" => Some("function".to_string()),
         "entity.name.function.constructor" => Some("constructor".to_string()),
         "support.function" => Some("function".to_string()),
         "meta.function-call" => Some("function".to_string()),
-        
+
         // Types and classes
         "entity.name.type" | "entity.name.class" => Some("type".to_string()),
         "entity.name.type.class" => Some("type".to_string()),
@@ -515,19 +537,21 @@ fn map_textmate_scope_to_zed(scope: &str) -> Option<String> {
         "entity.name.struct" => Some("type".to_string()),
         "support.type" => Some("type".to_string()),
         "storage.type.class" => Some("type".to_string()),
-        
+
         // Variables and parameters
         "variable" | "variable.other" => Some("variable".to_string()),
-        "variable.language" | "variable.language.this" | "variable.language.self" => Some("variable.special".to_string()),
+        "variable.language" | "variable.language.this" | "variable.language.self" => {
+            Some("variable.special".to_string())
+        }
         "variable.parameter" => Some("variable".to_string()),
         "variable.other.member" => Some("property".to_string()),
         "variable.other.property" => Some("property".to_string()),
-        
+
         // Properties and attributes
         "entity.other.attribute-name" => Some("attribute".to_string()),
         "entity.other.attribute-name.class" => Some("attribute".to_string()),
         "entity.other.attribute-name.id" => Some("attribute".to_string()),
-        
+
         // Punctuation
         "punctuation" => Some("punctuation".to_string()),
         "punctuation.definition" => Some("punctuation.delimiter".to_string()),
@@ -536,10 +560,16 @@ fn map_textmate_scope_to_zed(scope: &str) -> Option<String> {
         "punctuation.separator" => Some("punctuation.delimiter".to_string()),
         "punctuation.terminator" => Some("punctuation.delimiter".to_string()),
         "punctuation.accessor" => Some("punctuation.delimiter".to_string()),
-        "punctuation.section.brackets" | "punctuation.section.brackets.begin" | "punctuation.section.brackets.end" => Some("punctuation.bracket".to_string()),
-        "punctuation.section.parens" | "punctuation.section.parens.begin" | "punctuation.section.parens.end" => Some("punctuation.bracket".to_string()),
-        "punctuation.section.braces" | "punctuation.section.braces.begin" | "punctuation.section.braces.end" => Some("punctuation.bracket".to_string()),
-        
+        "punctuation.section.brackets" | "punctuation.section.brackets.begin" | "punctuation.section.brackets.end" => {
+            Some("punctuation.bracket".to_string())
+        }
+        "punctuation.section.parens" | "punctuation.section.parens.begin" | "punctuation.section.parens.end" => {
+            Some("punctuation.bracket".to_string())
+        }
+        "punctuation.section.braces" | "punctuation.section.braces.begin" | "punctuation.section.braces.end" => {
+            Some("punctuation.bracket".to_string())
+        }
+
         // Markup (Markdown, etc.)
         "markup.heading" | "markup.heading.1" | "markup.heading.2" | "markup.heading.3" => Some("title".to_string()),
         "markup.bold" => Some("emphasis.strong".to_string()),
@@ -552,33 +582,33 @@ fn map_textmate_scope_to_zed(scope: &str) -> Option<String> {
         "markup.quote" => Some("string".to_string()),
         "markup.raw" | "markup.raw.inline" | "markup.raw.block" => Some("string".to_string()),
         "markup.fenced_code" => Some("string".to_string()),
-        
+
         // Links
         "markup.underline.link" => Some("link_uri".to_string()),
         "string.other.link" => Some("link_uri".to_string()),
         "meta.link" => Some("link_text".to_string()),
-        
+
         // Tags (HTML, XML)
         "entity.name.tag" => Some("tag".to_string()),
         "entity.name.tag.open" | "entity.name.tag.close" => Some("tag".to_string()),
-        
+
         // Preprocessor
         "meta.preprocessor" => Some("preproc".to_string()),
         "keyword.control.directive" => Some("preproc".to_string()),
         "entity.name.function.preprocessor" => Some("preproc".to_string()),
-        
+
         // Labels and goto
         "entity.name.label" => Some("label".to_string()),
-        
+
         // Errors and invalid
         "invalid" | "invalid.illegal" | "invalid.deprecated" => Some("error".to_string()),
-        
+
         // Language-specific mappings
         "support.class" => Some("type".to_string()),
         "support.constant" => Some("constant".to_string()),
         "support.variable" => Some("variable".to_string()),
         "entity.name.module" | "entity.name.namespace" => Some("type".to_string()),
-        
+
         _ => {
             // Enhanced fallback logic with more specific pattern matching
             if scope.contains("comment.doc") || scope.contains("documentation") {
@@ -678,13 +708,11 @@ fn add_default_syntax_colors(syntax_map: &mut HashMap<String, HighlightStyle>) {
         ("property", "#9CDCFE"),
         ("attribute", "#92C5F7"),
         ("operator", "#D4D4D4"),
-        
         // Punctuation variants
         ("punctuation", "#D4D4D4"),
         ("punctuation.delimiter", "#D4D4D4"),
         ("punctuation.bracket", "#FFD700"),
         ("punctuation.list_marker", "#6A9955"),
-        
         // Markup elements
         ("title", "#4EC9B0"),
         ("emphasis", "#C586C0"),
@@ -692,7 +720,6 @@ fn add_default_syntax_colors(syntax_map: &mut HashMap<String, HighlightStyle>) {
         ("link_text", "#3794FF"),
         ("link_uri", "#3794FF"),
         ("tag", "#569CD6"),
-        
         // Special elements
         ("preproc", "#C586C0"),
         ("label", "#C586C0"),
