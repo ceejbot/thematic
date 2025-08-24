@@ -79,4 +79,4 @@ Well, there's a file for telling Claude how to work. It also tells humans how to
 
 ## LICENSE
 
-This code is licensed via [the Parity Public License.](https://paritylicense.com) This license requires people who build on top of this source code to share their work with the commun    ity, too. See the license text for details.
+This code is licensed via [the Parity Public License.](https://paritylicense.com) This license requires people who build on top of this source code to share their work with the community, too. See the license text for details.
