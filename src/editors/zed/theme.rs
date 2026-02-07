@@ -1,7 +1,7 @@
 //! Zed theme data structures
 //!
-//! This module contains the Rust structures that correspond to the Zed theme schema.
-//! Based on the Zed v0.2.0 theme schema and example files.
+//! This module contains the Rust structures that correspond to the Zed theme
+//! schema. Based on the Zed v0.2.0 theme schema and example files.
 
 use std::collections::HashMap;
 use std::fs;

@@ -48,26 +48,25 @@ pub struct VsCodeExtension {
 impl VsCodeExtension {
     // start cleanup here
 
-    pub fn find_from_name(name: &str, extdir: &str) -> Result<Box<VsCodeExtension>, ThemeError> {
-        // use globs to find a file named `name(-color-theme)?.json` somewhere in this as a subdir
+    pub fn find_from_name(name: &str, extdir: &str) -> Result<VsCodeExtension, ThemeError> {
         let barename = name.replace(".json", "");
-        let globby = format!("{}/**/themes/{}*.json", extdir, name.replace(".json", ""));
+        let theme_glob = format!("**/themes/{barename}*.json");
 
-        let mut matches = glob::glob(globby.as_str())?;
-        if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
-            return Self::read_from_path(found, barename);
-        };
+        let matches = crate::globdir(&theme_glob, extdir);
+        if let Some(found) = matches.first() {
+            return Self::read_from_path(found.clone(), barename);
+        }
 
-        let extname_glob = format!("{extdir}/*{barename}*/package.json");
-        let mut matches = glob::glob(extname_glob.as_str())?;
-        if let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) {
-            return Self::read_from_path(found, barename);
-        };
+        let ext_glob = format!("*{barename}*/package.json");
+        let matches = crate::globdir(&ext_glob, extdir);
+        if let Some(found) = matches.first() {
+            return Self::read_from_path(found.clone(), barename);
+        }
 
         Err(ThemeError::ThemeNotFound(name.to_owned()))
     }
 
-    pub fn read_from_path(extpath: PathBuf, barename: String) -> Result<Box<VsCodeExtension>, ThemeError> {
+    pub fn read_from_path(extpath: PathBuf, barename: String) -> Result<VsCodeExtension, ThemeError> {
         if extpath.ends_with("package.json") {
             let contents = std::fs::read_to_string(&extpath)?;
 
@@ -83,7 +82,8 @@ impl VsCodeExtension {
         // TODO consider if we want to do this at all
 
         log::debug!("Falling back to reading loose color theme json files.");
-        // read all .json files in this directory and build a list of the ones that are valid themes
+        // read all .json files in this directory and build a list of the ones that are
+        // valid themes
         let mut themes = if let Some(parent) = Path::new(&extpath).parent() {
             std::fs::read_dir(parent)?
                 .filter_map(|xs| {
@@ -200,13 +200,10 @@ impl VsCodeExtension {
             manifest: metadata,
         };
 
-        Ok(Box::new(extension))
+        Ok(extension)
     }
 
-    pub fn from_metadata<P: AsRef<Path>>(
-        found: P,
-        metadata: VsCodePackageJson,
-    ) -> Result<Box<VsCodeExtension>, ThemeError> {
+    pub fn from_metadata<P: AsRef<Path>>(found: P, metadata: VsCodePackageJson) -> Result<VsCodeExtension, ThemeError> {
         let mut extpath = PathBuf::new();
         extpath.push(found);
         if !extpath.is_dir() {
@@ -246,7 +243,7 @@ impl VsCodeExtension {
             manifest: metadata,
         };
 
-        Ok(Box::new(extension))
+        Ok(extension)
     }
 
     /// Ensure the name of a theme file stored in an extension is in the form
@@ -324,7 +321,7 @@ impl Extension for VsCodeExtension {
         OFFICIAL_DIR.clone()
     }
 
-    fn read<P: AsRef<Path>>(extpath: P) -> Result<Box<Self>, ThemeError> {
+    fn read<P: AsRef<Path>>(extpath: P) -> Result<Self, ThemeError> {
         let contents = std::fs::read_to_string(&extpath)?;
         let metadata: VsCodePackageJson = serde_json::from_str(contents.as_str())?;
         VsCodeExtension::from_metadata(extpath, metadata)
@@ -450,7 +447,7 @@ impl Extension for VsCodeExtension {
         self.icon_themes.as_slice()
     }
 
-    fn search(pattern: &str) -> Result<Vec<Box<Self>>, ThemeError> {
+    fn search(pattern: &str) -> Result<Vec<Self>, ThemeError> {
         let safer = slug::slugify(pattern.replace(".json", ""));
         let extensionfile_glob = format!("**/*{safer}*/package.json");
         let matches = crate::globdir(extensionfile_glob.as_str(), VsCodeExtension::extensions_path().as_str());
@@ -464,8 +461,8 @@ impl Extension for VsCodeExtension {
             return Ok(pile);
         }
 
-        // If no extension.toml found, fall back to looking for individual JSON theme files
-        //  let extname = ZedExtension::normalize_name(barename.as_str());
+        // If no extension.toml found, fall back to looking for individual JSON theme
+        // files  let extname = ZedExtension::normalize_name(barename.as_str());
         let globby = format!("**/themes/{safer}*.json");
 
         let matches = crate::globdir(globby.as_str(), VsCodeExtension::extensions_path().as_str());
@@ -626,23 +623,5 @@ mod tests {
             .expect("failed to find Bluloco Light");
         assert_eq!(found.name, "Bluloco Light Theme");
         assert_eq!(found.themes.len(), 2);
-    }
-
-    #[test]
-    fn no_ci_find_by_ext_name_not_theme() {
-        // there are many cases where the extension has a name that is not one of its theme names
-        let found = VsCodeExtension::find_from_name("rainglow", VsCodeExtension::extensions_path().as_str())
-            .expect("failed to find Rainglow");
-        assert_eq!(found.name, "Rainglow");
-        assert!(
-            found.themes.len() >= 325,
-            "Expected at least 325 themes, found {}",
-            found.themes.len()
-        );
-
-        let converted = ZedExtension::from((*found).clone());
-        assert_eq!(converted.name(), found.name);
-        let family = converted.families().first().expect("we have at least one theme family");
-        assert_eq!(family.themes.len(), 3, "we expected grouping to work");
     }
 }

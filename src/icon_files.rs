@@ -1,8 +1,9 @@
 //! Icon file management for theme conversions
 //!
-//! This module handles the tracking and copying of icon files during theme conversion.
-//! When converting between VSCode and Zed icon themes, we need to copy the actual
-//! icon files (SVG, PNG, etc.) from the source to the destination.
+//! This module handles the tracking and copying of icon files during theme
+//! conversion. When converting between VSCode and Zed icon themes, we need to
+//! copy the actual icon files (SVG, PNG, etc.) from the source to the
+//! destination.
 
 use std::collections::HashMap;
 use std::fs;
@@ -19,7 +20,8 @@ pub struct IconFileManager {
     source_base: PathBuf,
     /// Base directory where converted icons should be placed
     dest_base: PathBuf,
-    /// Subdirectory within dest_base where icons should be copied (e.g., "icons")
+    /// Subdirectory within dest_base where icons should be copied (e.g.,
+    /// "icons")
     dest_subdir: String,
 }
 
@@ -59,7 +61,8 @@ impl IconFileManager {
 
     /// Get the relative path for an icon file (for use in theme JSON)
     /// Takes the filename for the icon (e.g., "file.svg")
-    /// Returns the relative path to use in theme JSON files (e.g., "./icons/file.svg")
+    /// Returns the relative path to use in theme JSON files (e.g.,
+    /// "./icons/file.svg")
     pub fn get_relative_path(&self, filename: &str) -> String {
         format!("./{}/{}", self.dest_subdir, filename)
     }
@@ -110,7 +113,8 @@ impl IconFileManager {
         self.icon_sources.get(logical_name)
     }
 
-    /// Extract filename from a path string (handles both forward and backward slashes)
+    /// Extract filename from a path string (handles both forward and backward
+    /// slashes)
     pub fn extract_filename(path: &str) -> Option<String> {
         // Handle both forward slashes and backslashes
         let path = path.replace('\\', "/");

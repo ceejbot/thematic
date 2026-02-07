@@ -1,18 +1,17 @@
 //! Zed theme converter command-line tool
 //!
-//! This binary provides a command-line interface for bidirectional conversion between
-//! VSCode and Zed theme formats. It can parse Zed theme families and write out minimum
-//! viable Zed theme extensions. It can do the same for VSCode themes.
-
-use std::convert::From;
+//! This binary provides a command-line interface for bidirectional conversion
+//! between VSCode and Zed theme formats. It can parse Zed theme families and
+//! write out minimum viable Zed theme extensions. It can do the same for VSCode
+//! themes.
 
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
 use strsim::normalized_levenshtein;
+use thematic::ThemeError;
 use thematic::editors::{Extension, VsCodeExtension, ZedExtension};
-use thematic::*;
 
 /// Convert between VSCode and Zed theme formats
 #[derive(Parser)]
@@ -32,6 +31,9 @@ pub struct Cli {
     /// Output with theme information.
     #[arg(global = true, short = 'v', default_value_t = false)]
     verbose: bool,
+    /// Show what would be converted without writing any files.
+    #[arg(global = true, long, default_value_t = false)]
+    dry_run: bool,
     /// The conversion or list command.
     #[command(subcommand)]
     command: Convert,
@@ -43,24 +45,28 @@ pub enum Convert {
     /// Convert a VSCode theme JSON file to Zed format; `vz` for short
     #[command(name = "vscode-to-zed", alias = "vz")]
     VscodeToZed {
-        /// The name or part of the name of a VSCode theme to convert to Zed format
+        /// The name or part of the name of a VSCode theme to convert to Zed
+        /// format
         #[arg(value_name = "theme-name")]
         input: String,
     },
     /// Convert a Zed theme JSON file to VSCode format; `zv` for short
     #[command(name = "zed-to-vscode", alias = "zv")]
     ZedToVscode {
-        /// The name or part of the name of a Zed theme to convert to VSCode format
+        /// The name or part of the name of a Zed theme to convert to VSCode
+        /// format
         #[arg(value_name = "theme-name")]
         input: String,
     },
-    /// Find all the Zed themes with names matching the input pattern; `zed` for short
+    /// Find all the Zed themes with names matching the input pattern; `zed` for
+    /// short
     #[command(alias = "zed")]
     ZedList {
         /// the string to search for
         pattern: String,
     },
-    /// Find all the VSCode themes with names matching the input pattern; `vsc` for short
+    /// Find all the VSCode themes with names matching the input pattern; `vsc`
+    /// for short
     #[command(alias = "vsc")]
     VSCodeList {
         /// the string to search for
@@ -96,41 +102,39 @@ fn main() -> Result<(), ThemeError> {
     };
     lovely_env_logger::formatted_builder(config).filter(None, level).init();
 
+    let dry_run = cli.dry_run;
     match cli.command {
         Convert::VscodeToZed { input } => {
-            handle_vscode_extension(input)?;
+            handle_vscode_extension(input, dry_run)?;
         }
         Convert::ZedToVscode { input } => {
-            handle_zed_extension(input)?;
+            handle_zed_extension(input, dry_run)?;
         }
         Convert::ZedList { pattern } => {
-            handle_zed_search(pattern)?;
+            handle_search::<ZedExtension>(pattern)?;
         }
         Convert::VSCodeList { pattern } => {
-            handle_vscode_search(pattern)?;
+            handle_search::<VsCodeExtension>(pattern)?;
         }
     }
 
     Ok(())
 }
 
-fn handle_vscode_extension(fname: String) -> Result<(), ThemeError> {
+fn handle_vscode_extension(fname: String, dry_run: bool) -> Result<(), ThemeError> {
     let candidates = VsCodeExtension::search(fname.as_str())?;
     if candidates.is_empty() {
-        log::info!("Can't find a theme matching {}.", fname.blue());
-        std::process::exit(1);
+        return Err(ThemeError::ThemeNotFound(fname));
     }
 
-    let boxed = if candidates.len() > 1 {
+    let vscode = if candidates.len() > 1 {
         best_match(fname.as_str(), candidates)
     } else {
         candidates
-            .first()
-            .expect("a vec with exactly one entry doesn't have a first() ?? !!")
-            .clone()
+            .into_iter()
+            .next()
+            .expect("non-empty vec has no first element")
     };
-
-    let vscode = *boxed;
 
     log::info!("✓ Loaded VSCode theme extension: {fname}");
     log::debug!("Theme details:");
@@ -142,31 +146,26 @@ fn handle_vscode_extension(fname: String) -> Result<(), ThemeError> {
     );
 
     let converted = ZedExtension::from(vscode);
-    converted.write()?;
-    // add it to the list of installed Zed extensions
-    ZedExtension::add_installed(&converted)?;
 
-    // Provide summary of what was converted
     let color_count = converted.families().iter().map(|f| f.themes.len()).sum::<usize>();
     let icon_count = converted.icon_themes().len();
 
-    if color_count > 0 && icon_count > 0 {
-        log::info!("✓ Converted {color_count} color theme(s) and {icon_count} icon theme(s) to Zed format.");
-    } else if color_count > 0 {
-        log::info!("✓ Converted {color_count} color theme(s) to Zed format.");
-    } else if icon_count > 0 {
-        log::info!("✓ Converted {icon_count} icon theme(s) to Zed format.");
-    } else {
-        log::warn!("No themes found to convert.");
+    if dry_run {
+        log::info!("Dry run: would write to {}", converted.official_path().display());
+        log_conversion_summary(color_count, icon_count, "Zed");
+        return Ok(());
     }
+
+    converted.write()?;
+    ZedExtension::add_installed(&converted)?;
+    log_conversion_summary(color_count, icon_count, "Zed");
 
     Ok(())
 }
 
-fn handle_zed_extension(fname: String) -> Result<(), ThemeError> {
-    let zed = *(ZedExtension::read(fname.as_str())?);
+fn handle_zed_extension(fname: String, dry_run: bool) -> Result<(), ThemeError> {
+    let zed = ZedExtension::read(fname.as_str())?;
 
-    // print a lot only in this case
     log::info!("✓ Loaded Zed theme extension: {fname}");
     log::debug!("Theme details:");
     log::debug!("  - Name: {}", zed.manifest().name());
@@ -175,60 +174,45 @@ fn handle_zed_extension(fname: String) -> Result<(), ThemeError> {
     log::debug!("  - Icon themes in extension: {}", zed.manifest().icon_themes().len());
 
     let converted = VsCodeExtension::from(zed);
-    converted.write()?;
 
-    // Provide summary of what was converted
     let color_count = converted.themes().len();
     let icon_count = converted.icon_themes().len();
 
+    if dry_run {
+        log::info!("Dry run: would write to {}", converted.official_path().display());
+        log_conversion_summary(color_count, icon_count, "VSCode");
+        return Ok(());
+    }
+
+    converted.write()?;
+    log_conversion_summary(color_count, icon_count, "VSCode");
+
+    Ok(())
+}
+
+fn log_conversion_summary(color_count: usize, icon_count: usize, target: &str) {
     if color_count > 0 && icon_count > 0 {
-        log::info!("✓ Converted {color_count} color theme(s) and {icon_count} icon theme(s) to VSCode format.");
+        log::info!("✓ Converted {color_count} color theme(s) and {icon_count} icon theme(s) to {target} format.");
     } else if color_count > 0 {
-        log::info!("✓ Converted {color_count} color theme(s) to VSCode format.");
+        log::info!("✓ Converted {color_count} color theme(s) to {target} format.");
     } else if icon_count > 0 {
-        log::info!("✓ Converted {icon_count} icon theme(s) to VSCode format.");
+        log::info!("✓ Converted {icon_count} icon theme(s) to {target} format.");
     } else {
         log::warn!("No themes found to convert.");
     }
-
-    Ok(())
 }
 
-fn handle_zed_search(pattern: String) -> Result<(), ThemeError> {
-    // Find all zed extensions matching the pattern (literally if it compiles to a glob)
-    let matches = ZedExtension::search(pattern.as_str())?;
+fn handle_search<T: Extension>(pattern: String) -> Result<(), ThemeError> {
+    let matches = T::search(pattern.as_str())?;
     println!();
     println!("Found {}", pluralize(matches.len(), "match", "matches"));
     println!();
     for found in matches {
         println!("• {}", found.name().yellow());
+        println!("    {}", pluralize(found.themes().len(), "color theme", "color themes"));
         println!(
             "    {}",
-            pluralize(found.manifest().themes().len(), "color theme", "color themes")
-        );
-        println!(
-            "    {}",
-            pluralize(found.manifest().icon_themes().len(), "icon theme", "icon themes")
-        );
-        println!("    {}", found.official_path().display());
-    }
-    Ok(())
-}
-
-fn handle_vscode_search(pattern: String) -> Result<(), ThemeError> {
-    let matches = VsCodeExtension::search(pattern.as_str())?;
-    println!();
-    println!("Found {}", pluralize(matches.len(), "match", "matches"));
-    println!();
-    for found in matches {
-        println!("• {}", found.name().yellow());
-        println!(
-            "    {}",
-            pluralize(found.manifest().themes().len(), "color theme", "color themes")
-        );
-        println!(
-            "    {}",
-            pluralize(found.manifest().icon_themes().len(), "icon theme", "icon themes")
+            pluralize(found.icon_themes().len(), "icon theme", "icon themes")
         );
         println!("    {}", found.official_path().display());
     }
@@ -245,16 +229,16 @@ fn pluralize(count: usize, singular: &str, plural: &str) -> String {
     }
 }
 
-fn best_match<T>(pattern: &str, mut candidates: Vec<Box<T>>) -> Box<T>
+fn best_match<T>(pattern: &str, mut candidates: Vec<T>) -> T
 where
-    T: Extension + Clone,
+    T: Extension,
 {
     candidates.sort_by(|left, right| {
         let ldist = normalized_levenshtein(pattern, left.name());
         let rdist = normalized_levenshtein(pattern, right.name());
-        ldist.total_cmp(&rdist)
+        rdist.total_cmp(&ldist)
     });
-    candidates[0].clone()
+    candidates.into_iter().next().expect("non-empty candidates list")
 }
 
 #[cfg(test)]

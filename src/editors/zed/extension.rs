@@ -65,34 +65,30 @@ impl ZedExtension {
         Ok(())
     }
 
-    pub fn find_from_name(name: &str, extdir: &str) -> Result<Box<Self>, ThemeError> {
+    pub fn find_from_name(name: &str, extdir: &str) -> Result<Self, ThemeError> {
         let barename = name.replace(".json", "");
         let slugged_name = slug::slugify(&barename);
 
         // First, try to find extension.toml files in directories that match the name
-
-        let globby = format!("{extdir}/*/extension.toml");
-        let matches = glob::glob(globby.as_str())?;
-
-        for toml_path in matches.flatten() {
-            if let Some(dir_name) = toml_path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str()) {
-                // Check if directory name contains our search term
-                if dir_name.contains(&slugged_name) || dir_name.contains(&barename) {
-                    return ZedExtension::read_from_path(&toml_path, barename);
-                }
+        let matches = crate::globdir("*/extension.toml", extdir);
+        for toml_path in &matches {
+            if let Some(dir_name) = toml_path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str())
+                && (dir_name.contains(&slugged_name) || dir_name.contains(&barename))
+            {
+                return ZedExtension::read_from_path(toml_path, barename);
             }
         }
 
-        // If no extension.toml found, fall back to looking for individual JSON theme files
+        // If no extension.toml found, fall back to looking for individual JSON theme
+        // files
         let extname = ZedExtension::normalize_name(name);
-        let globby = format!("{extdir}/**/{extname}");
-
-        let mut matches = glob::glob(globby.as_str())?;
-        let Some(Ok(found)) = matches.find(|xs| xs.is_ok()) else {
+        let theme_glob = format!("**/{extname}");
+        let matches = crate::globdir(&theme_glob, extdir);
+        let Some(found) = matches.first() else {
             return Err(ThemeError::ThemeNotFound(name.to_owned()));
         };
 
-        ZedExtension::read_from_path(&found, barename)
+        ZedExtension::read_from_path(found, barename)
     }
 
     pub fn normalize_name(input: &str) -> String {
@@ -109,7 +105,7 @@ impl ZedExtension {
         self.icon_themes.as_slice()
     }
 
-    pub fn read_from_path(extpath: &PathBuf, barename: String) -> Result<Box<Self>, ThemeError> {
+    pub fn read_from_path(extpath: &PathBuf, barename: String) -> Result<Self, ThemeError> {
         if extpath.ends_with("extension.toml") {
             let contents = std::fs::read_to_string(extpath)?;
             let metadata: ZedManifest = toml::from_str(contents.as_str())?;
@@ -188,10 +184,11 @@ impl ZedExtension {
             metadata,
         };
 
-        Ok(Box::new(extension))
+        Ok(extension)
     }
 
-    /// Input is a path to a theme file; we find a manifest in the parent dir if one exists.
+    /// Input is a path to a theme file; we find a manifest in the parent dir if
+    /// one exists.
     pub fn extension_metadata(fpath: &Path) -> Option<ZedManifest> {
         // parent dir must exist and be named "themes"
         let parent = fpath.parent()?;
@@ -209,7 +206,7 @@ impl ZedExtension {
         toml::from_str::<ZedManifest>(contents.as_str()).ok()
     }
 
-    pub fn from_metadata<P: AsRef<Path>>(found: P, metadata: ZedManifest) -> Result<Box<ZedExtension>, ThemeError> {
+    pub fn from_metadata<P: AsRef<Path>>(found: P, metadata: ZedManifest) -> Result<ZedExtension, ThemeError> {
         let mut extpath = PathBuf::new();
         extpath.push(found);
         if !extpath.is_dir() {
@@ -250,7 +247,7 @@ impl ZedExtension {
             icon_themes,
             all_themes,
         };
-        Ok(Box::new(extension))
+        Ok(extension)
     }
 
     pub fn make_manifest_glob(pattern: &str) -> String {
@@ -269,7 +266,7 @@ impl Extension for ZedExtension {
     type IconThemeType = ZedIconTheme;
     type Manifest = ZedManifest;
 
-    fn read<P: AsRef<Path>>(extpath: P) -> Result<Box<Self>, ThemeError> {
+    fn read<P: AsRef<Path>>(extpath: P) -> Result<Self, ThemeError> {
         let contents = std::fs::read_to_string(&extpath)?;
         let metadata: ZedManifest = toml::from_str(contents.as_str())?;
         ZedExtension::from_metadata(extpath, metadata)
@@ -410,7 +407,7 @@ impl Extension for ZedExtension {
         &self.metadata
     }
 
-    fn search(pattern: &str) -> Result<Vec<Box<Self>>, ThemeError> {
+    fn search(pattern: &str) -> Result<Vec<Self>, ThemeError> {
         let extensionfile_glob = ZedExtension::make_manifest_glob(pattern);
         let matches = crate::globdir(extensionfile_glob.as_str(), ZedExtension::extensions_path().as_str());
         let pile: Vec<_> = matches
@@ -423,26 +420,18 @@ impl Extension for ZedExtension {
             return Ok(pile);
         }
 
-        // If no extension.toml found, fall back to looking for individual JSON theme files
+        // If no extension.toml found, fall back to looking for individual JSON theme
+        // files
         let themefile_glob = ZedExtension::make_themefile_glob(pattern);
         let matches = crate::globdir(themefile_glob.as_str(), ZedExtension::extensions_path().as_str());
         let pile: Vec<_> = matches
             .iter()
             .filter_map(|xs| {
-                eprintln!("{themefile_glob}");
-
                 let mut xpath = xs.clone();
                 xpath.pop();
                 xpath.pop();
                 xpath.push("extension.toml");
-                eprintln!("{xpath:#?}");
-                match ZedExtension::read(&xpath) {
-                    Ok(v) => Some(v),
-                    Err(e) => {
-                        eprintln!("{e:#?}");
-                        None
-                    }
-                }
+                ZedExtension::read(&xpath).ok()
             })
             .collect();
 
@@ -654,24 +643,6 @@ mod tests {
         let theme = ZedExtension::find_from_name("rose-pine-moon.json", fixtures.as_str())
             .expect("expected to read rose pine moon fixture");
         assert!(theme.name().contains("Rosé Pine"));
-    }
-
-    #[test]
-    fn no_ci_find_zed_extensions() {
-        let candidates = ZedExtension::search("rainglow").expect("expected to find exactly one rainglow extensions");
-        assert_eq!(candidates.len(), 1, "expected exactly one");
-        let theme = candidates
-            .first()
-            .expect("first() in a non-empty list should not be None");
-        assert!(theme.name().contains("Rainglow"));
-
-        let candidates =
-            ZedExtension::search("coffee").expect("expected to find possible extension containing a coffee theme");
-        assert!(!candidates.is_empty(), "expected at least one");
-        let theme = candidates
-            .first()
-            .expect("first() in a non-empty list should not be None");
-        assert!(theme.name().contains("Rainglow"));
     }
 
     #[test]

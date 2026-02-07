@@ -1,7 +1,7 @@
 //! Comprehensive conversion tests using fixtures
 //!
-//! These tests verify that conversions between VSCode and Zed formats work correctly
-//! by using real fixture data and comparing outputs.
+//! These tests verify that conversions between VSCode and Zed formats work
+//! correctly by using real fixture data and comparing outputs.
 
 use std::fs;
 use std::path::PathBuf;
@@ -54,7 +54,7 @@ fn vscode_to_zed_rose_pine_conversion() -> Result<(), ThemeError> {
     // Load VSCode Rose Pine Moon extension fixture
     let vscode_ext = VsCodeExtension::find_from_name("rose-pine", "./fixtures/vscode/")?;
     // Convert to Zed extension
-    let zed_extension = ZedExtension::from((*vscode_ext).clone());
+    let zed_extension = ZedExtension::from(vscode_ext.clone());
 
     // Verify the extension has correct metadata
     assert!(!zed_extension.name().is_empty(), "Extension should have a name");
@@ -123,7 +123,7 @@ fn zed_to_vscode_rose_pine_conversion() {
     let zed_extension =
         ZedExtension::find_from_name("rose-pine", "./fixtures/zed").expect("rose pine fixture should be findable");
     // Convert to VSCode extension
-    let vscode_extension = VsCodeExtension::from((*zed_extension).clone());
+    let vscode_extension = VsCodeExtension::from(zed_extension.clone());
 
     // Verify the extension has correct metadata
     assert!(!vscode_extension.name().is_empty(), "Extension should have a name");
@@ -326,7 +326,7 @@ fn vscode_to_zed_file_writing() -> Result<(), ThemeError> {
     )
     .expect("test fixtures should be readable");
     let _theme_count = original_vscode.manifest().themes().len();
-    let zed_extension = ZedExtension::from((*original_vscode).clone());
+    let zed_extension = ZedExtension::from(original_vscode.clone());
 
     // Debug: Check icon theme conversion
     eprintln!(
@@ -458,7 +458,7 @@ fn full_round_trip_with_files() {
     .expect("test fixtures should be readable");
     let theme_count = original_vscode.manifest().themes().len();
     // Step 2: Convert to Zed and write to temp directory
-    let zed_extension = ZedExtension::from((*original_vscode).clone());
+    let zed_extension = ZedExtension::from(original_vscode.clone());
 
     // Step 3: Check Zed theme briefly
     assert_eq!(
@@ -540,7 +540,8 @@ fn metadata_preservation() {
     );
 }
 
-/// Helper to compare theme colors (allowing for small differences in color conversion)
+/// Helper to compare theme colors (allowing for small differences in color
+/// conversion)
 fn colors_approximately_equal(color1: &str, color2: &str) -> bool {
     // Remove # if present and compare
     let c1 = color1.trim_start_matches('#').to_lowercase();

@@ -1,7 +1,7 @@
 //! VSCode theme data structures
 //!
-//! This module contains the Rust structures that correspond to VSCode color theme files.
-//! Based on the VSCode color theme schema and example files.
+//! This module contains the Rust structures that correspond to VSCode color
+//! theme files. Based on the VSCode color theme schema and example files.
 
 use std::collections::HashMap;
 use std::fs;
@@ -35,7 +35,8 @@ pub struct VsCodeTheme {
     pub filename: String,
 }
 
-/// Custom deserializer for semanticTokenColors that handles both old and new formats
+/// Custom deserializer for semanticTokenColors that handles both old and new
+/// formats
 fn deserialize_semantic_token_colors<'de, D>(
     deserializer: D,
 ) -> Result<Option<HashMap<String, TokenColorSettings>>, D::Error>
@@ -99,7 +100,8 @@ impl ThemeFile for VsCodeTheme {
     }
 }
 
-/// Token colors can be either a path to a tmTheme file or an array of token color rules
+/// Token colors can be either a path to a tmTheme file or an array of token
+/// color rules
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TokenColors {

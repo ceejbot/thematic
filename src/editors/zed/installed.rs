@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use crate::{Extension, ThemeFile, ZedExtension, ZedManifest};
 
 /// This is the index.json file in the Zed extensions directory. It contains a
-/// list of all the installed extensions Zed knows about, along with a directory of
-/// extensions sorted by type. Newly-converted themes need to be added here.
+/// list of all the installed extensions Zed knows about, along with a directory
+/// of extensions sorted by type. Newly-converted themes need to be added here.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledExtensions {
     /// map of extension manifests
@@ -20,9 +20,12 @@ pub struct InstalledExtensions {
     themes: HashMap<String, ZedThemeIndex>,
     /// map of icon theme pointers
     icon_themes: HashMap<String, ZedThemeIndex>,
-    /// We need to preserve entries for all other extension types, but we do not inspect them
-    languages: serde_json::Value,
-    // TODO: look up the full list of extension types
+    /// We need to preserve entries for all other extension types, but we do not
+    /// inspect them. Using flatten to capture languages, grammars,
+    /// snippets, context_servers, slash_commands, language_servers, and any
+    /// future extension types Zed adds.
+    #[serde(flatten)]
+    other: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -152,12 +155,13 @@ mod tests {
 
     #[test]
     fn test_add_extension() {
-        // Test that the InstalledExtensions struct can be created and basic operations work
+        // Test that the InstalledExtensions struct can be created and basic operations
+        // work
         let installed = InstalledExtensions {
             extensions: HashMap::new(),
             themes: HashMap::new(),
             icon_themes: HashMap::new(),
-            languages: serde_json::Value::Object(serde_json::Map::new()),
+            other: HashMap::new(),
         };
 
         // Verify initial state

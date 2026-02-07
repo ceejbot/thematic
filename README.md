@@ -1,15 +1,20 @@
 # thematic
 
-A converter between VSCode and Zed color themes. Only for MacOS at the moment.
+A bidirectional converter between VSCode and Zed color and icon themes. macOS only at the moment.
+
+## Installation
+
+```shell
+cargo install --path .
+```
 
 ## Usage
 
-Converts between VSCode and Zed color theme formats. Supports conversion from VSCode themes to Zed
-format and vice versa. Output is written to the destination editor's default theme location.
+Converts between VSCode and Zed theme formats, including both color themes and icon themes. Output is written to the destination editor's default theme location.
 
-The commands have aliases: `zv` for zed-to-vscode, and `vz` for vscode to zed. The second positional argument is the name of the theme to convert, or part of the name of the theme. For example, `thematic vz rainglow` finds the "Rainglow" theme extension for VSCode in the standard VSCode extensions directory, converts all included themes to Zed format (grouping into Zed families), then writes everything out as a new Zed extension in the standard Zed extension location.
+The commands have aliases: `vz` for vscode-to-zed, and `zv` for zed-to-vscode. The search commands also have aliases: `vsc` for vs-code-list and `zed` for zed-list. The positional argument is the name (or part of the name) of the theme to convert or search for.
 
-Partial support for icon themes is implemented, but this feature is still in progress.
+For example, `thematic vz catppuccin` finds the Catppuccin theme extension in the standard VSCode extensions directory, converts all included color themes and icon themes to Zed format (grouping into Zed families), then writes everything out as a new Zed extension in the standard Zed extension location.
 
 ```text
 ❯ thematic --help
@@ -18,42 +23,23 @@ Usage: thematic [OPTIONS] <COMMAND>
 Commands:
   vscode-to-zed  Convert a VSCode theme JSON file to Zed format; `vz` for short
   zed-to-vscode  Convert a Zed theme JSON file to VSCode format; `zv` for short
-  zed-list       Find all the Zed color or icon themes with names matching the input pattern
-  vs-code-list   Find all the VSCode color or icon themes with names matching the input pattern
+  zed-list       Find all the Zed themes with names matching the input pattern; `zed` for short
+  vs-code-list   Find all the VSCode themes with names matching the input pattern; `vsc` for short
   help           Print this message or the help of the given subcommand(s)
 
 Options:
-  -q      Print little-to-no theme information
-
-  -v      Print more theme information
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-  -V, --version
-          Print version
-```
-
-Example single command help:
-
-```text
-❯ thematic vz --help
-Usage: thematic vscode-to-zed [OPTIONS] <theme-name>
-
-Arguments:
-  <theme-name>  The name or part of the name of a VSCode theme to convert to Zed format
-
-Options:
-  -q          Print little-to-no theme information
-  -v          Print more theme information
-  -h, --help  Print help
+  -q             Quiet output
+  -v             Output with theme information
+      --dry-run  Show what would be converted without writing any files
+  -h, --help     Print help (see a summary with '-h')
+  -V, --version  Print version
 ```
 
 ## Stochastic parrot hints
 
 This was about two-thirds done with some targeted prompting of Claude Sonnet 4, including refactoring when it didn't do a good enough job. The remaining third was me losing patience with telling the intern what to do exactly. Having it do the tedious map-schemas-to-structs part was worth it, as was the From<T> implementations. It was also sort of okay at writing voluminous tests. When it got going with a solid prompt would slam up against consecutive tool use limits very quickly.
 
-My initial input to it was the schemas for both theme formats (in the [schemas directory](./schemas) and examples of each (in the [fixtures directory](./fixures)). I had to do quite a lot of prompting to refactor the results into usability, and it's still pretty messy by even my shoddy standards.
+My initial input to it was the schemas for both theme formats (in the [schemas directory](./schemas) and examples of each (in the [fixtures directory](./fixtures)). I had to do quite a lot of prompting to refactor the results into usability, and it's still pretty messy by even my shoddy standards.
 
 The schema for Zed themes is at [https://zed.dev/schema/themes/v0.2.0.json](https://zed.dev/schema/themes/v0.2.0.json).
 
@@ -71,10 +57,10 @@ Well, there's a file for telling Claude how to work. It also tells humans how to
 ## TODO
 
 - [ ] Handle some parts of Zed themes that VSCode doesn't do.
-- [ ] Convert icon themes fully. (Copy files etc.)
-- [ ] Polish up the user-visible output.
-- [ ] Clean up that horrible mess.
-- [ ] Detect that we're running on Linux and use those paths.
+- [x] Convert icon themes (including file copying).
+- [x] Polish up the user-visible output.
+- [x] Clean up code architecture.
+- [ ] Detect Linux and use appropriate paths.
 - [ ] Maybe try the Zed Windows beta too.
 
 ## LICENSE

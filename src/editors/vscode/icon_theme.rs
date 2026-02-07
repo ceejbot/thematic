@@ -106,7 +106,8 @@ impl VsCodeIconTheme {
     ///
     /// # Arguments
     /// * `dest_base` - Base directory where converted theme should be placed
-    /// * `dest_subdir` - Subdirectory within dest_base for icons (e.g., "icons")
+    /// * `dest_subdir` - Subdirectory within dest_base for icons (e.g.,
+    ///   "icons")
     pub fn create_icon_manager<P: AsRef<Path>>(
         &self,
         dest_base: P,
@@ -123,10 +124,10 @@ impl VsCodeIconTheme {
         // Track icons from icon definitions
         if let Some(icon_definitions) = &self.icon_definitions {
             for (icon_key, icon_def) in icon_definitions {
-                if let Some(icon_path) = &icon_def.icon_path {
-                    if let Some(_filename) = IconFileManager::extract_filename(icon_path) {
-                        manager.track_icon(icon_key.clone(), icon_path);
-                    }
+                if let Some(icon_path) = &icon_def.icon_path
+                    && let Some(_filename) = IconFileManager::extract_filename(icon_path)
+                {
+                    manager.track_icon(icon_key.clone(), icon_path);
                 }
             }
         }
@@ -155,10 +156,10 @@ impl VsCodeIconTheme {
     pub fn update_icon_paths(&mut self, path_mapping: &std::collections::HashMap<String, String>) {
         if let Some(icon_definitions) = &mut self.icon_definitions {
             for icon_def in icon_definitions.values_mut() {
-                if let Some(icon_path) = &mut icon_def.icon_path {
-                    if let Some(new_path) = path_mapping.get(icon_path) {
-                        *icon_path = new_path.clone();
-                    }
+                if let Some(icon_path) = &mut icon_def.icon_path
+                    && let Some(new_path) = path_mapping.get(icon_path)
+                {
+                    *icon_path = new_path.clone();
                 }
             }
         }
@@ -170,7 +171,8 @@ impl VsCodeIconTheme {
     }
 
     /// Track icons from this theme with an optional source base path
-    /// This is useful during conversion when icon paths need to be resolved relative to a source directory
+    /// This is useful during conversion when icon paths need to be resolved
+    /// relative to a source directory
     pub fn track_icons_with_base(
         &self,
         manager: &mut crate::IconFileManager,
@@ -178,17 +180,17 @@ impl VsCodeIconTheme {
     ) -> Result<(), crate::ThemeError> {
         if let Some(icon_definitions) = &self.icon_definitions {
             for (icon_key, icon_def) in icon_definitions {
-                if let Some(icon_path) = &icon_def.icon_path {
-                    if let Some(filename) = crate::IconFileManager::extract_filename(icon_path) {
-                        let logical_name = format!("{icon_key}_{filename}");
-                        if let Some(base) = source_base {
-                            let full_path = base.join(icon_path);
-                            if full_path.exists() {
-                                manager.track_icon_absolute(logical_name, full_path);
-                            }
-                        } else {
-                            manager.track_icon(logical_name, icon_path);
+                if let Some(icon_path) = &icon_def.icon_path
+                    && let Some(filename) = crate::IconFileManager::extract_filename(icon_path)
+                {
+                    let logical_name = format!("{icon_key}_{filename}");
+                    if let Some(base) = source_base {
+                        let full_path = base.join(icon_path);
+                        if full_path.exists() {
+                            manager.track_icon_absolute(logical_name, full_path);
                         }
+                    } else {
+                        manager.track_icon(logical_name, icon_path);
                     }
                 }
             }

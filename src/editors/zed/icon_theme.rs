@@ -65,7 +65,8 @@ impl ZedIconThemeFamily {
     ///
     /// # Arguments
     /// * `dest_base` - Base directory where converted theme should be placed
-    /// * `dest_subdir` - Subdirectory within dest_base for icons (e.g., "icons")
+    /// * `dest_subdir` - Subdirectory within dest_base for icons (e.g.,
+    ///   "icons")
     pub fn create_icon_manager<P: AsRef<Path>>(
         &self,
         dest_base: P,
@@ -212,7 +213,8 @@ impl ZedIconTheme {
     }
 
     /// Track icons from this theme with an optional source base path
-    /// This is useful during conversion when icon paths need to be resolved relative to a source directory
+    /// This is useful during conversion when icon paths need to be resolved
+    /// relative to a source directory
     pub fn track_icons_with_base(
         &self,
         manager: &mut IconFileManager,
@@ -391,7 +393,8 @@ impl ZedIconTheme {
                     let folder_expanded_key = vscode_theme.folder_expanded.as_deref().unwrap_or("_folder-open");
 
                     if icon_key != folder_key && icon_key != folder_expanded_key {
-                        // Convert icon key to a more generic name (remove leading underscore if present)
+                        // Convert icon key to a more generic name (remove leading underscore if
+                        // present)
                         let logical_name = if let Some(stripped) = icon_key.strip_prefix('_') {
                             stripped.to_string()
                         } else {

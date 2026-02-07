@@ -108,7 +108,8 @@ fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThe
 
     // Selection
     if let Some(color) = vscode_colors.get("editor.selectionBackground") {
-        // Zed doesn't have a direct equivalent, but we can use it for other selection-like colors
+        // Zed doesn't have a direct equivalent, but we can use it for other
+        // selection-like colors
         zed_style.element_selected = Some(color.clone());
     }
 
@@ -169,11 +170,11 @@ fn map_terminal_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut 
 /// Sets reasonable defaults for Zed-specific properties
 fn set_zed_defaults(zed_style: &mut ZedThemeStyle) {
     // Set default borders if not already set
-    if zed_style.border.is_none() {
-        if let Some(bg) = &zed_style.background {
-            // Create a slightly lighter/darker border color
-            zed_style.border = Some(bg.clone());
-        }
+    if zed_style.border.is_none()
+        && let Some(bg) = &zed_style.background
+    {
+        // Create a slightly lighter/darker border color
+        zed_style.border = Some(bg.clone());
     }
 
     // Set element states based on background
@@ -195,45 +196,46 @@ fn set_zed_defaults(zed_style: &mut ZedThemeStyle) {
     derive_zed_specific_colors(zed_style);
 }
 
-/// Derives intelligent color mappings for Zed-specific UI elements that don't exist in VSCode
+/// Derives intelligent color mappings for Zed-specific UI elements that don't
+/// exist in VSCode
 fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
     // Set ghost element colors based on regular elements with reduced opacity
-    if let Some(element_bg) = &zed_style.element_background {
-        if zed_style.ghost_element_background.is_none() {
-            zed_style.ghost_element_background = Some(format!("{}66", element_bg.trim_start_matches('#')));
-        }
+    if let Some(element_bg) = &zed_style.element_background
+        && zed_style.ghost_element_background.is_none()
+    {
+        zed_style.ghost_element_background = Some(format!("{}66", element_bg.trim_start_matches('#')));
     }
-    if let Some(element_hover) = &zed_style.element_hover {
-        if zed_style.ghost_element_hover.is_none() {
-            zed_style.ghost_element_hover = Some(format!("{}44", element_hover.trim_start_matches('#')));
-        }
+    if let Some(element_hover) = &zed_style.element_hover
+        && zed_style.ghost_element_hover.is_none()
+    {
+        zed_style.ghost_element_hover = Some(format!("{}44", element_hover.trim_start_matches('#')));
     }
-    if let Some(element_active) = &zed_style.element_active {
-        if zed_style.ghost_element_active.is_none() {
-            zed_style.ghost_element_active = Some(format!("{}55", element_active.trim_start_matches('#')));
-        }
+    if let Some(element_active) = &zed_style.element_active
+        && zed_style.ghost_element_active.is_none()
+    {
+        zed_style.ghost_element_active = Some(format!("{}55", element_active.trim_start_matches('#')));
     }
 
     // Set icon colors based on text colors
-    if let Some(text) = &zed_style.text {
-        if zed_style.icon.is_none() {
-            zed_style.icon = Some(text.clone());
-        }
+    if let Some(text) = &zed_style.text
+        && zed_style.icon.is_none()
+    {
+        zed_style.icon = Some(text.clone());
     }
-    if let Some(text_muted) = &zed_style.text_muted {
-        if zed_style.icon_muted.is_none() {
-            zed_style.icon_muted = Some(text_muted.clone());
-        }
+    if let Some(text_muted) = &zed_style.text_muted
+        && zed_style.icon_muted.is_none()
+    {
+        zed_style.icon_muted = Some(text_muted.clone());
     }
-    if let Some(text_disabled) = &zed_style.text_disabled {
-        if zed_style.icon_disabled.is_none() {
-            zed_style.icon_disabled = Some(text_disabled.clone());
-        }
+    if let Some(text_disabled) = &zed_style.text_disabled
+        && zed_style.icon_disabled.is_none()
+    {
+        zed_style.icon_disabled = Some(text_disabled.clone());
     }
-    if let Some(text_placeholder) = &zed_style.text_placeholder {
-        if zed_style.icon_placeholder.is_none() {
-            zed_style.icon_placeholder = Some(text_placeholder.clone());
-        }
+    if let Some(text_placeholder) = &zed_style.text_placeholder
+        && zed_style.icon_placeholder.is_none()
+    {
+        zed_style.icon_placeholder = Some(text_placeholder.clone());
     }
 
     // Set editor-specific colors based on general background
@@ -289,10 +291,10 @@ fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
     }
 
     // Set invisible characters color
-    if let Some(text_muted) = &zed_style.text_muted {
-        if zed_style.editor_invisible.is_none() {
-            zed_style.editor_invisible = Some(format!("{}33", text_muted.trim_start_matches('#')));
-        }
+    if let Some(text_muted) = &zed_style.text_muted
+        && zed_style.editor_invisible.is_none()
+    {
+        zed_style.editor_invisible = Some(format!("{}33", text_muted.trim_start_matches('#')));
     }
 
     // Set document highlight colors based on selection

@@ -82,7 +82,8 @@ pub struct ThemePointer {
     pub(crate) label: String,
     /// regular or dark flavored
     pub(crate) ui_theme: String,
-    /// The relative path to the file where the theme data is. Eg., ./themes/label.json
+    /// The relative path to the file where the theme data is. Eg.,
+    /// ./themes/label.json
     pub(crate) path: String,
 }
 
