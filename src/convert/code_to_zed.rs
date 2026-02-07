@@ -39,6 +39,15 @@ impl From<&VsCodeTheme> for ZedTheme {
     }
 }
 
+/// Returns true if the color string represents a fully transparent value.
+/// VSCode themes commonly use `#0000` or `#00000000` for "transparent /
+/// inherit", which should not be mapped to Zed fields as they'd produce
+/// invisible UI elements.
+fn is_transparent(color: &str) -> bool {
+    let trimmed = color.trim_start_matches('#');
+    trimmed == "0000" || trimmed == "00000000"
+}
+
 /// Maps VSCode UI colors to Zed theme style
 fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThemeStyle) {
     // Background and basic colors
@@ -132,6 +141,113 @@ fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThe
         zed_style.scrollbar_thumb_hover_background = Some(color.clone());
     }
 
+    // Search match highlighting
+    if let Some(color) = vscode_colors.get("editor.findMatchHighlightBackground")
+        && !is_transparent(color)
+    {
+        zed_style.search_match_background = Some(color.clone());
+    }
+
+    // Text accent / link colors
+    if let Some(color) = vscode_colors.get("textLink.foreground")
+        && !is_transparent(color)
+    {
+        zed_style.text_accent = Some(color.clone());
+    }
+    if let Some(color) = vscode_colors.get("disabledForeground")
+        && !is_transparent(color)
+    {
+        zed_style.text_disabled = Some(color.clone());
+    }
+    if let Some(color) = vscode_colors.get("input.placeholderForeground")
+        && !is_transparent(color)
+    {
+        zed_style.text_placeholder = Some(color.clone());
+    }
+    if let Some(color) = vscode_colors.get("textLink.activeForeground")
+        && !is_transparent(color)
+    {
+        zed_style.link_text_hover = Some(color.clone());
+    }
+
+    // Highlighted/bookmarked lines
+    if let Some(color) = vscode_colors.get("editor.lineHighlightBackground")
+        && !is_transparent(color)
+    {
+        zed_style.editor_highlighted_line_background = Some(color.clone());
+    }
+
+    // Bracket match highlighting
+    if let Some(color) = vscode_colors.get("editorBracketMatch.background")
+        && !is_transparent(color)
+    {
+        zed_style.editor_document_highlight_bracket_background = Some(color.clone());
+    }
+
+    // Border variant (deemphasized dividers)
+    if let Some(color) = vscode_colors.get("editorWidget.border")
+        && !is_transparent(color)
+    {
+        zed_style.border_variant = Some(color.clone());
+    }
+
+    // Active element background
+    if let Some(color) = vscode_colors.get("list.activeSelectionBackground")
+        && !is_transparent(color)
+    {
+        zed_style.element_active = Some(color.clone());
+    }
+
+    // Accent icon color — prefer activityBar.foreground, fall back to
+    // textLink.foreground
+    if zed_style.icon_accent.is_none()
+        && let Some(color) = vscode_colors.get("activityBar.foreground")
+        && !is_transparent(color)
+    {
+        zed_style.icon_accent = Some(color.clone());
+    }
+    if zed_style.icon_accent.is_none()
+        && let Some(color) = vscode_colors.get("textLink.foreground")
+        && !is_transparent(color)
+    {
+        zed_style.icon_accent = Some(color.clone());
+    }
+
+    // Indent guides — direct from VSCode (with background1 variant fallback)
+    for key in ["editorIndentGuide.background", "editorIndentGuide.background1"] {
+        if zed_style.editor_indent_guide.is_none()
+            && let Some(color) = vscode_colors.get(key)
+            && !is_transparent(color)
+        {
+            zed_style.editor_indent_guide = Some(color.clone());
+        }
+    }
+    for key in [
+        "editorIndentGuide.activeBackground",
+        "editorIndentGuide.activeBackground1",
+    ] {
+        if zed_style.editor_indent_guide_active.is_none()
+            && let Some(color) = vscode_colors.get(key)
+            && !is_transparent(color)
+        {
+            zed_style.editor_indent_guide_active = Some(color.clone());
+        }
+    }
+    if let Some(color) = vscode_colors.get("tree.indentGuidesStroke")
+        && !is_transparent(color)
+    {
+        if zed_style.panel_indent_guide.is_none() {
+            // Reduce opacity for non-active panel guide
+            zed_style.panel_indent_guide = Some(format!("{}66", color.trim_start_matches('#')));
+        }
+        if zed_style.panel_indent_guide_active.is_none() {
+            zed_style.panel_indent_guide_active = Some(color.clone());
+        }
+    }
+
+    // Extract diagnostic and git colors from the VSCode theme
+    map_diagnostic_and_git_colors(vscode_colors, zed_style);
+
     // Set some reasonable defaults for Zed-specific colors
     set_zed_defaults(zed_style);
 }
@@ -164,6 +280,86 @@ fn map_terminal_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut 
         if let Some(color) = vscode_colors.get(vscode_key) {
             *zed_field = Some(color.clone());
         }
+    }
+}
+
+/// Extracts diagnostic and git status colors from VSCode theme colors.
+/// Called before `set_zed_defaults()` so that theme-specific values take
+/// precedence over the hardcoded fallbacks in `set_semantic_status_colors()`.
+fn map_diagnostic_and_git_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThemeStyle) {
+    // Diagnostic colors — prefer editor-specific, fall back to general
+    if zed_style.error.is_none() {
+        for key in ["editorError.foreground", "errorForeground"] {
+            if let Some(color) = vscode_colors.get(key)
+                && !is_transparent(color)
+            {
+                zed_style.error = Some(color.clone());
+                break;
+            }
+        }
+    }
+    if zed_style.warning.is_none()
+        && let Some(color) = vscode_colors.get("editorWarning.foreground")
+        && !is_transparent(color)
+    {
+        zed_style.warning = Some(color.clone());
+    }
+    if zed_style.info.is_none()
+        && let Some(color) = vscode_colors.get("editorInfo.foreground")
+        && !is_transparent(color)
+    {
+        zed_style.info = Some(color.clone());
+    }
+    if zed_style.hint.is_none()
+        && let Some(color) = vscode_colors.get("editorHint.foreground")
+        && !is_transparent(color)
+    {
+        zed_style.hint = Some(color.clone());
+    }
+    // No direct VSCode "success" — use terminal.ansiGreen as a reasonable proxy
+    if zed_style.success.is_none()
+        && let Some(color) = vscode_colors.get("terminal.ansiGreen")
+        && !is_transparent(color)
+    {
+        zed_style.success = Some(color.clone());
+    }
+
+    // Git status colors
+    if zed_style.modified.is_none()
+        && let Some(color) = vscode_colors.get("gitDecoration.modifiedResourceForeground")
+        && !is_transparent(color)
+    {
+        zed_style.modified = Some(color.clone());
+    }
+    if zed_style.deleted.is_none()
+        && let Some(color) = vscode_colors.get("gitDecoration.deletedResourceForeground")
+        && !is_transparent(color)
+    {
+        zed_style.deleted = Some(color.clone());
+    }
+    if zed_style.created.is_none()
+        && let Some(color) = vscode_colors.get("gitDecoration.untrackedResourceForeground")
+        && !is_transparent(color)
+    {
+        zed_style.created = Some(color.clone());
+    }
+    if zed_style.conflict.is_none()
+        && let Some(color) = vscode_colors.get("gitDecoration.conflictingResourceForeground")
+        && !is_transparent(color)
+    {
+        zed_style.conflict = Some(color.clone());
+    }
+    if zed_style.renamed.is_none()
+        && let Some(color) = vscode_colors.get("gitDecoration.renamedResourceForeground")
+        && !is_transparent(color)
+    {
+        zed_style.renamed = Some(color.clone());
+    }
+    if zed_style.ignored.is_none()
+        && let Some(color) = vscode_colors.get("gitDecoration.ignoredResourceForeground")
+        && !is_transparent(color)
+    {
+        zed_style.ignored = Some(color.clone());
     }
 }
 
@@ -214,6 +410,39 @@ fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
         && zed_style.ghost_element_active.is_none()
     {
         zed_style.ghost_element_active = Some(format!("{}55", element_active.trim_start_matches('#')));
+    }
+    if let Some(element_selected) = &zed_style.element_selected
+        && zed_style.ghost_element_selected.is_none()
+    {
+        zed_style.ghost_element_selected = Some(format!("{}44", element_selected.trim_start_matches('#')));
+    }
+    if let Some(element_disabled) = &zed_style.element_disabled
+        && zed_style.ghost_element_disabled.is_none()
+    {
+        zed_style.ghost_element_disabled = Some(format!("{}33", element_disabled.trim_start_matches('#')));
+    }
+
+    // Set element_disabled from element_background if not set
+    if zed_style.element_disabled.is_none() {
+        zed_style.element_disabled = zed_style.element_background.clone();
+    }
+
+    // Set toolbar_background from tab_bar or editor background
+    if zed_style.toolbar_background.is_none() {
+        zed_style.toolbar_background = zed_style
+            .tab_bar_background
+            .clone()
+            .or_else(|| zed_style.editor_background.clone());
+    }
+
+    // Transparent border is always semantically correct as fully transparent
+    if zed_style.border_transparent.is_none() {
+        zed_style.border_transparent = Some("#00000000".to_string());
+    }
+
+    // Scrollbar track matches editor background
+    if zed_style.scrollbar_track_background.is_none() {
+        zed_style.scrollbar_track_background = zed_style.editor_background.clone();
     }
 
     // Set icon colors based on text colors
@@ -455,7 +684,7 @@ fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
         zed_style.ignored = Some("#8E8E93".to_string());
     }
     if zed_style.hidden.is_none() {
-        zed_style.hidden = Some("#48484A".to_string());
+        zed_style.hidden = zed_style.ignored.clone().or_else(|| Some("#48484A".to_string()));
     }
 }
 
@@ -825,5 +1054,73 @@ mod tests {
             map_textmate_scope_to_zed("constant.numeric"),
             Some("number".to_string())
         );
+    }
+
+    #[test]
+    fn transparent_colors_not_mapped() {
+        assert!(is_transparent("#0000"));
+        assert!(is_transparent("#00000000"));
+        assert!(!is_transparent("#FF6B6B"));
+        assert!(!is_transparent("#eb6f92"));
+        assert!(!is_transparent("#000000"));
+        assert!(!is_transparent("#000"));
+    }
+
+    #[test]
+    fn diagnostic_colors_from_vscode() {
+        let vscode_theme =
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode theme");
+
+        let zed: ZedTheme = (&vscode_theme).into();
+
+        // Rose Pine Moon has explicit diagnostic colors
+        assert_eq!(zed.style.error.as_deref(), Some("#eb6f92"));
+        assert_eq!(zed.style.warning.as_deref(), Some("#f6c177"));
+        assert_eq!(zed.style.info.as_deref(), Some("#9ccfd8"));
+        assert_eq!(zed.style.hint.as_deref(), Some("#908caa"));
+    }
+
+    #[test]
+    fn git_colors_from_vscode() {
+        let vscode_theme =
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode theme");
+
+        let zed: ZedTheme = (&vscode_theme).into();
+
+        // Rose Pine Moon has explicit git decoration colors
+        assert_eq!(zed.style.modified.as_deref(), Some("#ea9a97"));
+        assert_eq!(zed.style.deleted.as_deref(), Some("#908caa"));
+        assert_eq!(zed.style.created.as_deref(), Some("#f6c177"));
+        assert_eq!(zed.style.conflict.as_deref(), Some("#eb6f92"));
+        assert_eq!(zed.style.renamed.as_deref(), Some("#3e8fb0"));
+        assert_eq!(zed.style.ignored.as_deref(), Some("#6e6a86"));
+    }
+
+    #[test]
+    fn text_accent_and_placeholder() {
+        let vscode_theme =
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode theme");
+
+        let zed: ZedTheme = (&vscode_theme).into();
+
+        assert_eq!(zed.style.text_accent.as_deref(), Some("#c4a7e7"));
+        assert!(zed.style.text_placeholder.is_some());
+        assert!(zed.style.link_text_hover.is_some());
+    }
+
+    #[test]
+    fn catppuccin_diagnostic_colors() {
+        let vscode_theme = VsCodeTheme::read("fixtures/vscode/catppuccin.catppuccin-vsc-3.17.0/themes/mocha.json")
+            .expect("Failed to load Catppuccin Mocha theme");
+
+        let zed: ZedTheme = (&vscode_theme).into();
+
+        assert_eq!(zed.style.error.as_deref(), Some("#f38ba8"));
+        assert_eq!(zed.style.warning.as_deref(), Some("#fab387"));
+        assert_eq!(zed.style.info.as_deref(), Some("#89b4fa"));
+        assert!(zed.style.text_disabled.is_some());
     }
 }

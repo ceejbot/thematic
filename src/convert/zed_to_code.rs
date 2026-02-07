@@ -121,6 +121,91 @@ fn map_zed_to_vscode_colors(zed_style: &ZedThemeStyle) -> HashMap<String, String
         colors.insert("panel.background".to_string(), color.clone());
     }
 
+    // Selection
+    if let Some(color) = &zed_style.element_selected {
+        colors.insert("editor.selectionBackground".to_string(), color.clone());
+    }
+
+    // Scrollbar
+    if let Some(color) = &zed_style.scrollbar_thumb_background {
+        colors.insert("scrollbarSlider.background".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.scrollbar_thumb_hover_background {
+        colors.insert("scrollbarSlider.hoverBackground".to_string(), color.clone());
+    }
+
+    // Search match highlighting
+    if let Some(color) = &zed_style.search_match_background {
+        colors.insert("editor.findMatchHighlightBackground".to_string(), color.clone());
+    }
+
+    // Text accent / link colors
+    if let Some(color) = &zed_style.text_accent {
+        colors.insert("textLink.foreground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.text_disabled {
+        colors.insert("disabledForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.text_placeholder {
+        colors.insert("input.placeholderForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.link_text_hover {
+        colors.insert("textLink.activeForeground".to_string(), color.clone());
+    }
+
+    // Border variant
+    if let Some(color) = &zed_style.border_variant {
+        colors.insert("editorWidget.border".to_string(), color.clone());
+    }
+
+    // Active element
+    if let Some(color) = &zed_style.element_active {
+        colors.insert("list.activeSelectionBackground".to_string(), color.clone());
+    }
+
+    // Diagnostic colors
+    if let Some(color) = &zed_style.error {
+        colors.insert("editorError.foreground".to_string(), color.clone());
+        colors.insert("errorForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.warning {
+        colors.insert("editorWarning.foreground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.info {
+        colors.insert("editorInfo.foreground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.hint {
+        colors.insert("editorHint.foreground".to_string(), color.clone());
+    }
+
+    // Git decoration colors
+    if let Some(color) = &zed_style.modified {
+        colors.insert("gitDecoration.modifiedResourceForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.deleted {
+        colors.insert("gitDecoration.deletedResourceForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.created {
+        colors.insert("gitDecoration.untrackedResourceForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.conflict {
+        colors.insert("gitDecoration.conflictingResourceForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.renamed {
+        colors.insert("gitDecoration.renamedResourceForeground".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.ignored {
+        colors.insert("gitDecoration.ignoredResourceForeground".to_string(), color.clone());
+    }
+
+    // Indent guides
+    if let Some(color) = &zed_style.editor_indent_guide {
+        colors.insert("editorIndentGuide.background".to_string(), color.clone());
+    }
+    if let Some(color) = &zed_style.editor_indent_guide_active {
+        colors.insert("editorIndentGuide.activeBackground".to_string(), color.clone());
+    }
+
     colors
 }
 
