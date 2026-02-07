@@ -61,18 +61,20 @@ pub enum Appearance {
     Dark,
 }
 
-/// Main theme style containing all color and styling definitions
+/// Main theme style containing all color and styling definitions.
+///
+/// This is a flat struct mirroring Zed's flat JSON theme schema.
+/// Fields are grouped by logical section for readability.
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ZedThemeStyle {
+    // --- Base UI ---
     pub accents: Option<Vec<String>>,
-
-    // Background appearance
     #[serde(rename = "background.appearance")]
     pub background_appearance: Option<BackgroundAppearance>,
-
-    // Base colors
     pub background: Option<String>,
+
+    // --- Borders ---
     pub border: Option<String>,
     #[serde(rename = "border.disabled")]
     pub border_disabled: Option<String>,
@@ -85,7 +87,7 @@ pub struct ZedThemeStyle {
     #[serde(rename = "border.variant")]
     pub border_variant: Option<String>,
 
-    // Surface colors
+    // --- Surfaces ---
     #[serde(rename = "elevated_surface.background")]
     pub elevated_surface_background: Option<String>,
     #[serde(rename = "surface.background")]
@@ -93,7 +95,7 @@ pub struct ZedThemeStyle {
     #[serde(rename = "drop_target.background")]
     pub drop_target_background: Option<String>,
 
-    // Element colors
+    // --- Elements ---
     #[serde(rename = "element.active")]
     pub element_active: Option<String>,
     #[serde(rename = "element.background")]
@@ -105,7 +107,7 @@ pub struct ZedThemeStyle {
     #[serde(rename = "element.selected")]
     pub element_selected: Option<String>,
 
-    // Ghost element colors
+    // --- Ghost elements ---
     #[serde(rename = "ghost_element.active")]
     pub ghost_element_active: Option<String>,
     #[serde(rename = "ghost_element.background")]
@@ -117,7 +119,7 @@ pub struct ZedThemeStyle {
     #[serde(rename = "ghost_element.selected")]
     pub ghost_element_selected: Option<String>,
 
-    // Text colors
+    // --- Text ---
     pub text: Option<String>,
     #[serde(rename = "text.accent")]
     pub text_accent: Option<String>,
@@ -128,7 +130,7 @@ pub struct ZedThemeStyle {
     #[serde(rename = "text.placeholder")]
     pub text_placeholder: Option<String>,
 
-    // Icon colors
+    // --- Icons ---
     pub icon: Option<String>,
     #[serde(rename = "icon.accent")]
     pub icon_accent: Option<String>,
@@ -139,15 +141,21 @@ pub struct ZedThemeStyle {
     #[serde(rename = "icon.placeholder")]
     pub icon_placeholder: Option<String>,
 
-    // UI component backgrounds
+    // --- Status bar ---
     #[serde(rename = "status_bar.background")]
     pub status_bar_background: Option<String>,
+
+    // --- Title bar ---
     #[serde(rename = "title_bar.background")]
     pub title_bar_background: Option<String>,
     #[serde(rename = "title_bar.inactive_background")]
     pub title_bar_inactive_background: Option<String>,
+
+    // --- Toolbar ---
     #[serde(rename = "toolbar.background")]
     pub toolbar_background: Option<String>,
+
+    // --- Tab bar ---
     #[serde(rename = "tab_bar.background")]
     pub tab_bar_background: Option<String>,
     #[serde(rename = "tab.active_background")]
@@ -155,9 +163,11 @@ pub struct ZedThemeStyle {
     #[serde(rename = "tab.inactive_background")]
     pub tab_inactive_background: Option<String>,
 
-    // Search and panel colors
+    // --- Search ---
     #[serde(rename = "search.match_background")]
     pub search_match_background: Option<String>,
+
+    // --- Panel / pane ---
     #[serde(rename = "panel.background")]
     pub panel_background: Option<String>,
     #[serde(rename = "panel.focused_border")]
@@ -168,14 +178,12 @@ pub struct ZedThemeStyle {
     pub panel_indent_guide_active: Option<String>,
     #[serde(rename = "panel.indent_guide_hover")]
     pub panel_indent_guide_hover: Option<String>,
-
-    // Pane colors
     #[serde(rename = "pane.focused_border")]
     pub pane_focused_border: Option<String>,
     #[serde(rename = "pane_group.border")]
     pub pane_group_border: Option<String>,
 
-    // Scrollbar colors
+    // --- Scrollbar ---
     #[serde(rename = "scrollbar.thumb.background")]
     pub scrollbar_thumb_background: Option<String>,
     #[serde(rename = "scrollbar.thumb.border")]
@@ -187,7 +195,7 @@ pub struct ZedThemeStyle {
     #[serde(rename = "scrollbar.track.border")]
     pub scrollbar_track_border: Option<String>,
 
-    // Editor colors
+    // --- Editor ---
     #[serde(rename = "editor.active_line.background")]
     pub editor_active_line_background: Option<String>,
     #[serde(rename = "editor.active_line_number")]
@@ -221,7 +229,7 @@ pub struct ZedThemeStyle {
     #[serde(rename = "editor.wrap_guide")]
     pub editor_wrap_guide: Option<String>,
 
-    // Terminal colors
+    // --- Terminal ---
     #[serde(rename = "terminal.ansi.background")]
     pub terminal_ansi_background: Option<String>,
     #[serde(rename = "terminal.ansi.black")]
@@ -281,11 +289,11 @@ pub struct ZedThemeStyle {
     #[serde(rename = "terminal.foreground")]
     pub terminal_foreground: Option<String>,
 
-    // Link colors
+    // --- Links ---
     #[serde(rename = "link_text.hover")]
     pub link_text_hover: Option<String>,
 
-    // Status colors
+    // --- Git / diff status ---
     pub conflict: Option<String>,
     #[serde(rename = "conflict.background")]
     pub conflict_background: Option<String>,
@@ -301,66 +309,70 @@ pub struct ZedThemeStyle {
     pub deleted_background: Option<String>,
     #[serde(rename = "deleted.border")]
     pub deleted_border: Option<String>,
-    pub error: Option<String>,
-    #[serde(rename = "error.background")]
-    pub error_background: Option<String>,
-    #[serde(rename = "error.border")]
-    pub error_border: Option<String>,
-    pub hidden: Option<String>,
-    #[serde(rename = "hidden.background")]
-    pub hidden_background: Option<String>,
-    #[serde(rename = "hidden.border")]
-    pub hidden_border: Option<String>,
-    pub hint: Option<String>,
-    #[serde(rename = "hint.background")]
-    pub hint_background: Option<String>,
-    #[serde(rename = "hint.border")]
-    pub hint_border: Option<String>,
-    pub ignored: Option<String>,
-    #[serde(rename = "ignored.background")]
-    pub ignored_background: Option<String>,
-    #[serde(rename = "ignored.border")]
-    pub ignored_border: Option<String>,
-    pub info: Option<String>,
-    #[serde(rename = "info.background")]
-    pub info_background: Option<String>,
-    #[serde(rename = "info.border")]
-    pub info_border: Option<String>,
     pub modified: Option<String>,
     #[serde(rename = "modified.background")]
     pub modified_background: Option<String>,
     #[serde(rename = "modified.border")]
     pub modified_border: Option<String>,
-    pub predictive: Option<String>,
-    #[serde(rename = "predictive.background")]
-    pub predictive_background: Option<String>,
-    #[serde(rename = "predictive.border")]
-    pub predictive_border: Option<String>,
     pub renamed: Option<String>,
     #[serde(rename = "renamed.background")]
     pub renamed_background: Option<String>,
     #[serde(rename = "renamed.border")]
     pub renamed_border: Option<String>,
+
+    // --- Diagnostics ---
+    pub error: Option<String>,
+    #[serde(rename = "error.background")]
+    pub error_background: Option<String>,
+    #[serde(rename = "error.border")]
+    pub error_border: Option<String>,
+    pub hint: Option<String>,
+    #[serde(rename = "hint.background")]
+    pub hint_background: Option<String>,
+    #[serde(rename = "hint.border")]
+    pub hint_border: Option<String>,
+    pub info: Option<String>,
+    #[serde(rename = "info.background")]
+    pub info_background: Option<String>,
+    #[serde(rename = "info.border")]
+    pub info_border: Option<String>,
     pub success: Option<String>,
     #[serde(rename = "success.background")]
     pub success_background: Option<String>,
     #[serde(rename = "success.border")]
     pub success_border: Option<String>,
-    pub unreachable: Option<String>,
-    #[serde(rename = "unreachable.background")]
-    pub unreachable_background: Option<String>,
-    #[serde(rename = "unreachable.border")]
-    pub unreachable_border: Option<String>,
     pub warning: Option<String>,
     #[serde(rename = "warning.background")]
     pub warning_background: Option<String>,
     #[serde(rename = "warning.border")]
     pub warning_border: Option<String>,
 
-    // Player colors for collaboration
+    // --- Special states ---
+    pub hidden: Option<String>,
+    #[serde(rename = "hidden.background")]
+    pub hidden_background: Option<String>,
+    #[serde(rename = "hidden.border")]
+    pub hidden_border: Option<String>,
+    pub ignored: Option<String>,
+    #[serde(rename = "ignored.background")]
+    pub ignored_background: Option<String>,
+    #[serde(rename = "ignored.border")]
+    pub ignored_border: Option<String>,
+    pub predictive: Option<String>,
+    #[serde(rename = "predictive.background")]
+    pub predictive_background: Option<String>,
+    #[serde(rename = "predictive.border")]
+    pub predictive_border: Option<String>,
+    pub unreachable: Option<String>,
+    #[serde(rename = "unreachable.background")]
+    pub unreachable_background: Option<String>,
+    #[serde(rename = "unreachable.border")]
+    pub unreachable_border: Option<String>,
+
+    // --- Players (collaboration) ---
     pub players: Option<Vec<PlayerColor>>,
 
-    // Syntax highlighting
+    // --- Syntax highlighting ---
     pub syntax: Option<HashMap<String, HighlightStyle>>,
 }
 

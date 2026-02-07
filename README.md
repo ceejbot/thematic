@@ -1,6 +1,6 @@
 # thematic
 
-A bidirectional converter between VSCode and Zed color and icon themes. macOS only at the moment.
+A bidirectional converter between VSCode and Zed color and icon themes. Works on macOS, Linux, and Windows.
 
 ## Installation
 
@@ -60,8 +60,8 @@ Well, there's a file for telling Claude how to work. It also tells humans how to
 - [x] Convert icon themes (including file copying).
 - [x] Polish up the user-visible output.
 - [x] Clean up code architecture.
-- [ ] Detect Linux and use appropriate paths.
-- [ ] Maybe try the Zed Windows beta too.
+- [x] Detect Linux and use appropriate paths.
+- [x] Windows paths implemented.
 
 ## LICENSE
 

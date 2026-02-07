@@ -1,135 +1,94 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
-## Project Status
+## Project Overview
 
-**Thematic** is a bidirectional theme converter between VSCode and Zed editors (v0.1.3). Currently macOS-only.
+**Thematic** (v0.1.3) is a bidirectional converter between VSCode and Zed editor theme formats. It converts color themes, icon themes, and extension manifests. Works on macOS, Linux, and Windows.
 
-### Implemented Features
-✅ VSCode → Zed color theme conversion (`vz` command)
-✅ Zed → VSCode color theme conversion (`zv` command)
-✅ Theme listing and fuzzy search for both editors
-✅ Automatic theme family grouping for Zed
-✅ Extension manifest generation for both formats
-✅ Installation to default editor directories
-⚠️  Partial icon theme support (file detection works, copying not yet implemented)
+## Build / Lint / Test
 
-### Known Limitations
-- macOS only (Linux/Windows paths not implemented)
-- Icon theme conversion incomplete (file copying needed)
-- Some Zed-specific theme features not fully mapped to VSCode
-- Code needs cleanup and refactoring (see TODOs in code)
+There's a `.justfile` (leading dot!) with convenience recipes.
 
-## Build/Lint/Test Commands
+### Preferred commands
+- **Test:** `cargo nextest run` (project preference over `cargo test`)
+- **Lint:** `cargo clippy --all-targets`
+- **Format:** `cargo +nightly fmt --all` (nightly required; config in `.rustfmt.toml`)
+- **CI check:** `just ci` (runs tests, clippy, and fmt --check)
+- **Quick lint+fix:** `just lint` (clippy --fix + fmt)
+- **Single test:** `cargo nextest run <test_name>`
+- **Run binary:** `cargo run -- <args>` (e.g., `cargo run -- vz catppuccin`)
 
-**Note:** There's a `.justfile` (with leading dot!) containing convenience recipes.
+### Testing notes
+- Tests prefixed `no_ci_` require locally-installed editor extensions and will fail in clean environments.
+- All other tests use fixtures in `fixtures/` and should always pass.
 
-### Just Recipes
-- `just test` - Run all tests using nextest
-- `just ci` - Run tests, clippy, and formatting (requires nightly)
-- `just lint` - Run clippy fixes and format code
-- `just setup` - Install required development tools
-- `just version BUMP` - Tag a new version (patch/minor/major)
-- `just release` - Build and release for both Apple architectures
+## Code Style
 
-### Direct Cargo Commands
-- Build: `cargo build`
-- Check: `cargo check`
-- Format: `cargo +nightly fmt --all`
-- Lint: `cargo clippy --all-targets`
-- Test all: `cargo nextest run --future-incompat-report` (or fallback to `cargo test`)
-- Test single: `cargo nextest run <test_name>` (or fallback to `cargo test <test_name>`)
-- Run binary: `cargo run -- <args>` (e.g., `cargo run -- vz catppuccin`)
-- Release build: `cargo build --release`
+- **Formatting:** Nightly rustfmt with `.rustfmt.toml` config (max_width=120, style_edition=2024, module-level imports grouped std/external/crate).
+- **Lints:** `deny(clippy::unwrap_used)` outside tests, `deny(unsafe_code)` everywhere (set in `src/lib.rs`).
+- **Error handling:** Use `Result<T, ThemeError>` with the crate's error types in `src/errors.rs` (derived via `thiserror`). No `unwrap()` outside tests.
+- **Naming:** Standard Rust conventions (snake_case functions/variables, CamelCase types).
+- **Doc comments:** `//!` for modules, `///` for items.
 
-## Code Style Guidelines
+## Architecture
 
-- **Imports**: Use module-level imports, grouped by std/external/crate (configured in .rustfmt.toml)
-- **Types**: Prefer strong typing with proper error handling. Define message types in `src/messages.rs`.
-- **Structure**: Use divergent-let for early returns when appropriate
-- **Error Handling**: Avoid `unwrap()` (denied by clippy), prefer the Result pattern with crate-specific error types derived with `thiserror`. Define error types in `src/errors.rs`.
-- **Formatting**: Use nightly rustfmt with project config
-- **Naming**: Follow Rust conventions (snake_case for functions/variables, CamelCase for types)
-- **Safety**: Unsafe code is denied by lints
-- **Documentation**: Use doc comments (`//!` for module, `///` for items)
+### CLI (`src/main.rs`)
+Binary uses `clap` with four subcommands:
+- `vscode-to-zed` / `vz` — Convert VSCode themes to Zed
+- `zed-to-vscode` / `zv` — Convert Zed themes to VSCode
+- `zed-list` / `zed` — Search installed Zed themes
+- `vs-code-list` / `vsc` — Search installed VSCode themes
 
-## Project Architecture
+Global flags: `-q` (quiet), `-v` (verbose/debug), `--dry-run` (preview without writing).
 
-This is a bidirectional theme converter between VSCode and Zed editors. The architecture follows:
+When multiple candidates match a name, the best match is selected via `strsim::normalized_levenshtein`.
 
-**Core Structure:**
-- `src/main.rs` - CLI entry point with clap commands
-- `src/lib.rs` - Library interface (docs TODO)
-- `src/editors/` - Contains VSCode and Zed specific implementations
-  - `vscode/` - VSCode extension, theme, manifest, and icon theme modules
-  - `zed/` - Zed extension, theme, manifest, icon theme, and installed extensions modules
-- `src/convert/` - Bidirectional conversion logic between theme formats
-  - `code_to_zed.rs` - VSCode to Zed conversion logic
-  - `zed_to_code.rs` - Zed to VSCode conversion logic
-- `src/errors.rs` - Centralized error types using `thiserror`
-- `src/icon_files.rs` - Icon theme file management utilities
-- `src/conversion_tests.rs` - Integration tests for conversions
-
-**Key Types:**
-- `VsCodeExtension` and `ZedExtension` - Main extension containers implementing `Extension` trait
-- `ThemeError` - Unified error handling across all operations
-- Conversion functions in `convert/` module handle format translation
-
-**CLI Interface:**
-- Binary uses `clap` for command parsing with aliases:
-  - `vz` / `vscode-to-zed` - Convert VSCode themes to Zed
-  - `zv` / `zed-to-vscode` - Convert Zed themes to VSCode
-  - `zed` / `zed-list` - List Zed themes
-  - `vsc` / `vscode-list` - List VSCode themes
-- Supports fuzzy search for themes using string similarity matching
-- Automatic installation to editor-specific directories
-
-## Codebase Orientation
-
-### Key Files to Start With
-1. `src/main.rs` - CLI command handling and orchestration
-2. `src/editors/mod.rs` - Extension trait definition and common logic
-3. `src/convert/mod.rs` - Entry point for conversion logic
-4. `src/errors.rs` - All error types used throughout
-
-### Directory Layout
+### Module layout
 ```
 src/
-├── main.rs                 # CLI entry point
-├── lib.rs                  # Library interface
-├── errors.rs               # Error types
-├── icon_files.rs           # Icon file utilities
-├── conversion_tests.rs     # Integration tests
+├── main.rs              # CLI entry point and orchestration
+├── lib.rs               # Crate root; re-exports + lint attrs
+├── errors.rs            # ThemeError enum (thiserror)
+├── grouping.rs          # Theme family grouping by name similarity
+├── icon_files.rs        # IconFileManager for copying icon assets
+├── conversion_tests.rs  # Integration tests (cfg(test) only)
 ├── editors/
-│   ├── mod.rs             # Extension trait and common code
-│   ├── vscode/            # VSCode-specific implementation
-│   └── zed/               # Zed-specific implementation
+│   ├── mod.rs           # Extension + ThemeFile traits, globdir()
+│   ├── vscode/          # VsCodeExtension, VsCodeTheme, VsCodePackageJson, VsCodeIconTheme
+│   └── zed/             # ZedExtension, ZedTheme, ZedManifest, ZedIconTheme, InstalledExtensions
 └── convert/
-    ├── mod.rs             # Conversion module interface
-    ├── code_to_zed.rs     # VSCode → Zed conversion
-    └── zed_to_code.rs     # Zed → VSCode conversion
+    ├── mod.rs           # Convert module interface
+    ├── code_to_zed.rs   # VSCode → Zed (From<&VsCodeTheme> for ZedTheme)
+    └── zed_to_code.rs   # Zed → VSCode (From<&ZedTheme> for VsCodeTheme)
 ```
 
-### Testing Approach
-- Unit tests colocated with implementation files
-- Integration tests in `src/conversion_tests.rs`
-- Test fixtures in `fixtures/` directory
-- Schema files in `schemas/` directory for reference
+### Key traits
+- **`Extension`** (in `editors/mod.rs`) — Requires `Sized`. Defines `search()`, `read()`, `write()`, `write_to()`, `extensions_path()`, `name()`, `manifest()`, `themes()`, `icon_themes()`, `official_path()`. Implemented by `VsCodeExtension` and `ZedExtension`.
+- **`ThemeFile`** — `read()`, `write_to()`, `from_bytes()`. Implemented by theme family types.
 
-## Outstanding TODOs (from codebase)
+### Key implementation details
+- `pub use editors::*` in lib.rs is required — internal code uses `crate::vscode::` and `crate::zed::` paths through the wildcard re-export chain.
+- `globdir()` in `editors/mod.rs` is `pub(crate)` — uses `fast-glob` + `walkdir` for filesystem pattern matching.
+- Theme family grouping (`src/grouping.rs`) uses hybrid prefix + variant clustering to group related themes (e.g., "Rosé Pine", "Rosé Pine Moon", "Rosé Pine Dawn" into one family).
+- `InstalledExtensions` (`editors/zed/installed.rs`) uses `#[serde(flatten)]` for forward-compatible handling of unknown extension types in Zed's `index.json`.
+- `ZedThemeStyle` has ~144 optional `String` fields in a flat struct (mirrors Zed's flat JSON schema). Fields are grouped with section comments.
+- Platform-specific paths: Zed uses `#[cfg(target_os)]` for macOS/Linux/Windows; VSCode uses `~/.vscode/extensions` everywhere.
+- Both `write_to()` methods log a warning before overwriting an existing extension directory.
 
-1. **Library Documentation** - Add usage docs to `src/lib.rs:9`
-2. **Family Groupings** - Add more assertions about family groupings in `src/editors/mod.rs:397`
-3. **Extension Consideration** - Consider approach in `src/editors/vscode/extension.rs:83`
-4. **Manifest Sub-pieces** - Write sub-pieces in `src/editors/zed/manifest.rs:125`
-5. **Extension Types** - Look up full list of extension types in `src/editors/zed/installed.rs:25`
+### Conversion flow
+1. `Extension::search()` finds candidate extensions by glob-matching the user's input
+2. Best match selected (Levenshtein distance if multiple candidates)
+3. `From` impl converts the extension type (e.g., `ZedExtension::from(vscode_ext)`)
+4. Internally, individual themes are converted via `From<&VsCodeTheme> for ZedTheme` (or reverse)
+5. `Extension::write()` writes theme files, icon themes (with file copying), and manifest to the target editor's extension directory
 
-## Development Tasks (from README)
+## Reference
 
-- [ ] Handle some parts of Zed themes that VSCode doesn't do
-- [ ] Convert icon themes fully (copy files etc.)
-- [ ] Polish up the user-visible output
-- [ ] Clean up code architecture
-- [ ] Detect Linux and use appropriate paths
-- [ ] Maybe try the Zed Windows beta too
+### Fixtures and schemas
+- `fixtures/vscode/` — Catppuccin and Rosé Pine VSCode extension fixtures
+- `fixtures/zed/` — Catppuccin, Rosé Pine, and Serendipity Zed extension fixtures (including icon themes)
+- `docs/schemas/` — JSON schemas for both VSCode and Zed theme formats
+
+### Dependencies (notable)
+`clap` (CLI), `serde`/`serde_json`/`toml` (serialization), `thiserror` (errors), `fast-glob`+`walkdir` (filesystem), `strsim` (fuzzy matching), `slug` (name normalization), `owo-colors` (terminal output), `home` (home directory), `lovely_env_logger` (logging)

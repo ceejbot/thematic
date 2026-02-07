@@ -334,6 +334,9 @@ impl Extension for VsCodeExtension {
     fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let mut workdir = PathBuf::new();
         workdir.push(&path);
+        if workdir.exists() {
+            log::warn!("Overwriting existing extension at {}", workdir.display());
+        }
         workdir.push("themes");
         std::fs::create_dir_all(&workdir)?;
 
@@ -540,10 +543,7 @@ impl From<ZedExtension> for VsCodeExtension {
 
         let themes: Vec<VsCodeTheme> = families
             .iter()
-            .flat_map(|fam| {
-                let themelist: Vec<VsCodeTheme> = fam.into();
-                themelist
-            })
+            .flat_map(|fam| -> Vec<VsCodeTheme> { fam.into() })
             .collect();
 
         let metadata = VsCodePackageJson {

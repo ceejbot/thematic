@@ -279,6 +279,9 @@ impl Extension for ZedExtension {
     fn write_to<P: AsRef<Path>>(&self, path: P) -> Result<(), ThemeError> {
         let mut workdir = PathBuf::new();
         workdir.push(&path);
+        if workdir.exists() {
+            log::warn!("Overwriting existing extension at {}", workdir.display());
+        }
         workdir.push("themes");
         std::fs::create_dir_all(&workdir)?;
 
@@ -454,18 +457,12 @@ impl From<VsCodeExtension> for ZedExtension {
 
         // Now we do our first clever thing. We group themes by name similarity
         // into Zed theme families. We then convert by family.
-        let mut theme_map: HashMap<String, VsCodeTheme> = HashMap::new();
-        let theme_names: Vec<String> = incoming
-            .iter()
-            .map(|xs| {
-                let name = xs.name.clone();
-                theme_map.insert(name.clone(), xs.clone());
-                xs.name.clone()
-            })
-            .collect();
+        let theme_names: Vec<String> = incoming.iter().map(|xs| xs.name.clone()).collect();
+        let mut theme_map: HashMap<String, VsCodeTheme> =
+            incoming.iter().map(|xs| (xs.name.clone(), xs.clone())).collect();
         let family_name_pairs = crate::group_families(theme_names);
         let families: Vec<ZedThemeFamily> = family_name_pairs
-            .iter()
+            .into_iter()
             .filter_map(|(maybe_name, name_family)| {
                 let themes: Vec<ZedTheme> = name_family
                     .iter()
@@ -477,11 +474,7 @@ impl From<VsCodeExtension> for ZedExtension {
                     return None;
                 }
 
-                let fam_name = if let Some(n) = maybe_name {
-                    n.clone()
-                } else {
-                    themes[0].name.clone()
-                };
+                let fam_name = maybe_name.unwrap_or_else(|| themes[0].name.clone());
                 Some(ZedThemeFamily {
                     schema: None,
                     author: author.clone(),
