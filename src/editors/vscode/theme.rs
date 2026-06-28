@@ -18,8 +18,8 @@ use crate::editors::ThemeFile;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VsCodeTheme {
     pub name: String,
-    #[serde(rename = "type")]
-    pub theme_type: Option<String>,
+    #[serde(rename = "type", default, deserialize_with = "deserialize_theme_type")]
+    pub theme_type: Option<ThemeType>,
     pub colors: Option<HashMap<String, String>>,
     #[serde(rename = "tokenColors")]
     pub token_colors: Option<TokenColors>,
@@ -33,6 +33,39 @@ pub struct VsCodeTheme {
     pub semantic_token_colors: Option<HashMap<String, TokenColorSettings>>,
     #[serde(skip)]
     pub filename: String,
+}
+
+/// The appearance category declared in a VSCode theme's `type` field.
+///
+/// VSCode recognizes the standard light/dark pair plus high-contrast variants.
+/// Unknown values deserialize to `None` (see `deserialize_theme_type`) so an
+/// unfamiliar theme still reads successfully.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum ThemeType {
+    #[serde(rename = "dark")]
+    Dark,
+    #[serde(rename = "light")]
+    Light,
+    #[serde(rename = "hcDark")]
+    HighContrastDark,
+    #[serde(rename = "hcLight")]
+    HighContrastLight,
+}
+
+/// Deserializes the `type` field leniently: an unrecognized value becomes
+/// `None` rather than failing the entire theme read.
+fn deserialize_theme_type<'de, D>(deserializer: D) -> Result<Option<ThemeType>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw: Option<String> = Option::deserialize(deserializer)?;
+    Ok(raw.and_then(|s| match s.as_str() {
+        "dark" => Some(ThemeType::Dark),
+        "light" => Some(ThemeType::Light),
+        "hcDark" | "hc" => Some(ThemeType::HighContrastDark),
+        "hcLight" => Some(ThemeType::HighContrastLight),
+        _ => None,
+    }))
 }
 
 /// Custom deserializer for semanticTokenColors that handles both old and new
@@ -154,18 +187,18 @@ impl VsCodeTheme {
     }
 
     /// Get the theme type (light or dark)
-    pub fn get_theme_type(&self) -> Option<&str> {
-        self.theme_type.as_deref()
+    pub fn get_theme_type(&self) -> Option<ThemeType> {
+        self.theme_type
     }
 
-    /// Check if this is a dark theme
+    /// Check if this is a dark theme (standard or high-contrast).
     pub fn is_dark_theme(&self) -> bool {
-        self.theme_type.as_ref().map(|t| t == "dark").unwrap_or(false)
+        matches!(self.theme_type, Some(ThemeType::Dark | ThemeType::HighContrastDark))
     }
 
-    /// Check if this is a light theme
+    /// Check if this is a light theme (standard or high-contrast).
     pub fn is_light_theme(&self) -> bool {
-        self.theme_type.as_ref().map(|t| t == "light").unwrap_or(false)
+        matches!(self.theme_type, Some(ThemeType::Light | ThemeType::HighContrastLight))
     }
 
     /// Get a color by key from the colors map
@@ -445,7 +478,7 @@ mod tests {
         assert!(result.is_ok());
         let theme = result.unwrap();
         assert_eq!(theme.name, "Rosé Pine Moon");
-        assert_eq!(theme.get_theme_type(), Some("dark"));
+        assert_eq!(theme.get_theme_type(), Some(ThemeType::Dark));
         assert!(theme.is_dark_theme());
         assert!(!theme.is_light_theme());
 
@@ -461,13 +494,37 @@ mod tests {
         assert!(result.is_ok());
         let theme = result.unwrap();
         assert_eq!(theme.name, "Bluloco Light");
-        assert_eq!(theme.get_theme_type(), Some("light"));
+        assert_eq!(theme.get_theme_type(), Some(ThemeType::Light));
         assert!(!theme.is_dark_theme());
         assert!(theme.is_light_theme());
 
         // Test that we can access some colors
         assert!(theme.get_color("editor.background").is_some());
         assert!(theme.get_color("editor.foreground").is_some());
+    }
+
+    #[test]
+    fn theme_type_deserializes_leniently() {
+        // Known variants map through.
+        let dark: VsCodeTheme = serde_json::from_str(r#"{"name":"X","type":"dark"}"#).expect("parses");
+        assert_eq!(dark.theme_type, Some(ThemeType::Dark));
+
+        // High-contrast variants are recognized and counted as dark/light.
+        let hc: VsCodeTheme = serde_json::from_str(r#"{"name":"X","type":"hcDark"}"#).expect("parses");
+        assert_eq!(hc.theme_type, Some(ThemeType::HighContrastDark));
+        assert!(hc.is_dark_theme());
+
+        // An unrecognized value becomes None rather than failing the whole read.
+        let unknown: VsCodeTheme = serde_json::from_str(r#"{"name":"X","type":"chartreuse"}"#).expect("parses");
+        assert_eq!(unknown.theme_type, None);
+
+        // A missing `type` is also None.
+        let missing: VsCodeTheme = serde_json::from_str(r#"{"name":"X"}"#).expect("parses");
+        assert_eq!(missing.theme_type, None);
+
+        // Round-trips back to the lowercase wire value.
+        let json = serde_json::to_string(&dark).expect("serializes");
+        assert!(json.contains(r#""type":"dark""#), "got {json}");
     }
 
     #[test]

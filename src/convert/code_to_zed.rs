@@ -3,6 +3,7 @@
 
 use std::collections::HashMap;
 
+use super::color::HexColor;
 use crate::editors::vscode::{TokenColorRule, TokenColors, TokenScope};
 use crate::editors::zed::{Appearance, FontStyle, FontWeight, HighlightStyle, PlayerColor, ZedThemeStyle};
 use crate::{VsCodeTheme, ZedTheme};
@@ -48,8 +49,27 @@ fn is_transparent(color: &str) -> bool {
     trimmed == "0000" || trimmed == "00000000"
 }
 
-/// Maps VSCode UI colors to Zed theme style
+/// Maps VSCode UI colors to Zed theme style.
+///
+/// A dispatcher over single-concern helpers. Order matters: later steps
+/// (diagnostics, defaults, derivations) read fields written by earlier ones.
 fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThemeStyle) {
+    map_base_and_chrome_colors(vscode_colors, zed_style);
+    map_terminal_colors(vscode_colors, zed_style);
+    map_editor_surface_colors(vscode_colors, zed_style);
+    map_text_accent_colors(vscode_colors, zed_style);
+    map_indent_guide_colors(vscode_colors, zed_style);
+
+    // Extract diagnostic and git colors from the VSCode theme
+    map_diagnostic_and_git_colors(vscode_colors, zed_style);
+
+    // Set some reasonable defaults for Zed-specific colors
+    set_zed_defaults(zed_style);
+}
+
+/// Editor base colors plus the surrounding workspace chrome: status/title bars,
+/// tabs, and the terminal foreground/background.
+fn map_base_and_chrome_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThemeStyle) {
     // Background and basic colors
     if let Some(color) = vscode_colors.get("editor.background") {
         zed_style.editor_background = Some(color.clone());
@@ -93,10 +113,11 @@ fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThe
     if let Some(color) = vscode_colors.get("editor.background") {
         zed_style.terminal_background = Some(color.clone());
     }
+}
 
-    // Terminal ANSI colors
-    map_terminal_colors(vscode_colors, zed_style);
-
+/// Editor surface decorations: line highlight, line numbers, gutter, selection,
+/// sidebar, focus border, and scrollbar.
+fn map_editor_surface_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThemeStyle) {
     // Editor line highlighting
     if let Some(color) = vscode_colors.get("editor.lineHighlightBackground") {
         zed_style.editor_active_line_background = Some(color.clone());
@@ -140,7 +161,12 @@ fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThe
     if let Some(color) = vscode_colors.get("scrollbarSlider.hoverBackground") {
         zed_style.scrollbar_thumb_hover_background = Some(color.clone());
     }
+}
 
+/// Text accents and links, plus assorted opaque-guarded UI accents (search
+/// match, highlighted lines, bracket match, border variant, active element,
+/// icon accent).
+fn map_text_accent_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThemeStyle) {
     // Search match highlighting
     if let Some(color) = vscode_colors.get("editor.findMatchHighlightBackground")
         && !is_transparent(color)
@@ -212,7 +238,11 @@ fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThe
     {
         zed_style.icon_accent = Some(color.clone());
     }
+}
 
+/// Indent guides, taken directly from VSCode where present, with an
+/// opacity-reduced fallback derived from `tree.indentGuidesStroke`.
+fn map_indent_guide_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThemeStyle) {
     // Indent guides — direct from VSCode (with background1 variant fallback)
     for key in ["editorIndentGuide.background", "editorIndentGuide.background1"] {
         if zed_style.editor_indent_guide.is_none()
@@ -238,18 +268,12 @@ fn map_ui_colors(vscode_colors: &HashMap<String, String>, zed_style: &mut ZedThe
     {
         if zed_style.panel_indent_guide.is_none() {
             // Reduce opacity for non-active panel guide
-            zed_style.panel_indent_guide = Some(format!("{}66", color.trim_start_matches('#')));
+            zed_style.panel_indent_guide = Some(HexColor::new(color).with_alpha("66"));
         }
         if zed_style.panel_indent_guide_active.is_none() {
             zed_style.panel_indent_guide_active = Some(color.clone());
         }
     }
-
-    // Extract diagnostic and git colors from the VSCode theme
-    map_diagnostic_and_git_colors(vscode_colors, zed_style);
-
-    // Set some reasonable defaults for Zed-specific colors
-    set_zed_defaults(zed_style);
 }
 
 /// Maps terminal ANSI colors from VSCode to Zed
@@ -393,35 +417,56 @@ fn set_zed_defaults(zed_style: &mut ZedThemeStyle) {
 }
 
 /// Derives intelligent color mappings for Zed-specific UI elements that don't
-/// exist in VSCode
+/// exist in VSCode.
+///
+/// A dispatcher over single-concern helpers. Order matters:
+/// `derive_ghost_elements` runs before `derive_surface_defaults` so the
+/// ghost-disabled derivation still sees `element_disabled` as `None` (its
+/// default fallback is set afterward).
 fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
+    derive_ghost_elements(zed_style);
+    derive_surface_defaults(zed_style);
+    derive_icon_colors(zed_style);
+    derive_editor_guide_colors(zed_style);
+
+    // Set status colors with semantic defaults
+    set_semantic_status_colors(zed_style);
+}
+
+/// Ghost-element colors, derived from the regular element states with reduced
+/// opacity.
+fn derive_ghost_elements(zed_style: &mut ZedThemeStyle) {
     // Set ghost element colors based on regular elements with reduced opacity
     if let Some(element_bg) = &zed_style.element_background
         && zed_style.ghost_element_background.is_none()
     {
-        zed_style.ghost_element_background = Some(format!("{}66", element_bg.trim_start_matches('#')));
+        zed_style.ghost_element_background = Some(HexColor::new(element_bg).with_alpha("66"));
     }
     if let Some(element_hover) = &zed_style.element_hover
         && zed_style.ghost_element_hover.is_none()
     {
-        zed_style.ghost_element_hover = Some(format!("{}44", element_hover.trim_start_matches('#')));
+        zed_style.ghost_element_hover = Some(HexColor::new(element_hover).with_alpha("44"));
     }
     if let Some(element_active) = &zed_style.element_active
         && zed_style.ghost_element_active.is_none()
     {
-        zed_style.ghost_element_active = Some(format!("{}55", element_active.trim_start_matches('#')));
+        zed_style.ghost_element_active = Some(HexColor::new(element_active).with_alpha("55"));
     }
     if let Some(element_selected) = &zed_style.element_selected
         && zed_style.ghost_element_selected.is_none()
     {
-        zed_style.ghost_element_selected = Some(format!("{}44", element_selected.trim_start_matches('#')));
+        zed_style.ghost_element_selected = Some(HexColor::new(element_selected).with_alpha("44"));
     }
     if let Some(element_disabled) = &zed_style.element_disabled
         && zed_style.ghost_element_disabled.is_none()
     {
-        zed_style.ghost_element_disabled = Some(format!("{}33", element_disabled.trim_start_matches('#')));
+        zed_style.ghost_element_disabled = Some(HexColor::new(element_disabled).with_alpha("33"));
     }
+}
 
+/// Surface and chrome defaults: disabled element, toolbar, transparent border,
+/// and scrollbar track.
+fn derive_surface_defaults(zed_style: &mut ZedThemeStyle) {
     // Set element_disabled from element_background if not set
     if zed_style.element_disabled.is_none() {
         zed_style.element_disabled = zed_style.element_background.clone();
@@ -444,7 +489,10 @@ fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
     if zed_style.scrollbar_track_background.is_none() {
         zed_style.scrollbar_track_background = zed_style.editor_background.clone();
     }
+}
 
+/// Icon colors, derived from the corresponding text colors.
+fn derive_icon_colors(zed_style: &mut ZedThemeStyle) {
     // Set icon colors based on text colors
     if let Some(text) = &zed_style.text
         && zed_style.icon.is_none()
@@ -466,14 +514,18 @@ fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
     {
         zed_style.icon_placeholder = Some(text_placeholder.clone());
     }
+}
 
+/// Editor-area derivations: subheader/drop-target backgrounds, pane borders,
+/// indent guides, wrap guides, invisibles, and document highlights.
+fn derive_editor_guide_colors(zed_style: &mut ZedThemeStyle) {
     // Set editor-specific colors based on general background
     if let Some(bg) = &zed_style.background {
         if zed_style.editor_subheader_background.is_none() {
             zed_style.editor_subheader_background = Some(bg.clone());
         }
         if zed_style.drop_target_background.is_none() {
-            zed_style.drop_target_background = Some(format!("{}22", bg.trim_start_matches('#')));
+            zed_style.drop_target_background = Some(HexColor::new(bg).with_alpha("22"));
         }
     }
 
@@ -493,29 +545,29 @@ fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
     // Set indent guides based on border with reduced opacity
     if let Some(border) = &zed_style.border {
         if zed_style.editor_indent_guide.is_none() {
-            zed_style.editor_indent_guide = Some(format!("{}33", border.trim_start_matches('#')));
+            zed_style.editor_indent_guide = Some(HexColor::new(border).with_alpha("33"));
         }
         if zed_style.editor_indent_guide_active.is_none() {
-            zed_style.editor_indent_guide_active = Some(format!("{}66", border.trim_start_matches('#')));
+            zed_style.editor_indent_guide_active = Some(HexColor::new(border).with_alpha("66"));
         }
         if zed_style.panel_indent_guide.is_none() {
-            zed_style.panel_indent_guide = Some(format!("{}33", border.trim_start_matches('#')));
+            zed_style.panel_indent_guide = Some(HexColor::new(border).with_alpha("33"));
         }
         if zed_style.panel_indent_guide_active.is_none() {
-            zed_style.panel_indent_guide_active = Some(format!("{}66", border.trim_start_matches('#')));
+            zed_style.panel_indent_guide_active = Some(HexColor::new(border).with_alpha("66"));
         }
         if zed_style.panel_indent_guide_hover.is_none() {
-            zed_style.panel_indent_guide_hover = Some(format!("{}55", border.trim_start_matches('#')));
+            zed_style.panel_indent_guide_hover = Some(HexColor::new(border).with_alpha("55"));
         }
     }
 
     // Set editor wrap guides
     if let Some(line_number) = &zed_style.editor_line_number {
         if zed_style.editor_wrap_guide.is_none() {
-            zed_style.editor_wrap_guide = Some(format!("{}44", line_number.trim_start_matches('#')));
+            zed_style.editor_wrap_guide = Some(HexColor::new(line_number).with_alpha("44"));
         }
         if zed_style.editor_active_wrap_guide.is_none() {
-            zed_style.editor_active_wrap_guide = Some(format!("{}77", line_number.trim_start_matches('#')));
+            zed_style.editor_active_wrap_guide = Some(HexColor::new(line_number).with_alpha("77"));
         }
     }
 
@@ -523,34 +575,41 @@ fn derive_zed_specific_colors(zed_style: &mut ZedThemeStyle) {
     if let Some(text_muted) = &zed_style.text_muted
         && zed_style.editor_invisible.is_none()
     {
-        zed_style.editor_invisible = Some(format!("{}33", text_muted.trim_start_matches('#')));
+        zed_style.editor_invisible = Some(HexColor::new(text_muted).with_alpha("33"));
     }
 
     // Set document highlight colors based on selection
     if let Some(selected) = &zed_style.element_selected {
         if zed_style.editor_document_highlight_read_background.is_none() {
-            zed_style.editor_document_highlight_read_background =
-                Some(format!("{}33", selected.trim_start_matches('#')));
+            zed_style.editor_document_highlight_read_background = Some(HexColor::new(selected).with_alpha("33"));
         }
         if zed_style.editor_document_highlight_write_background.is_none() {
-            zed_style.editor_document_highlight_write_background =
-                Some(format!("{}55", selected.trim_start_matches('#')));
+            zed_style.editor_document_highlight_write_background = Some(HexColor::new(selected).with_alpha("55"));
         }
     }
-
-    // Set status colors with semantic defaults
-    set_semantic_status_colors(zed_style);
 }
 
 /// Sets semantic status colors for Git, diagnostics, etc.
+///
+/// A dispatcher over single-concern helpers. Diagnostics run first because the
+/// git-status defaults fall back to the `success`/`warning`/`error` colors set
+/// there.
 fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
+    set_diagnostic_status_defaults(zed_style);
+    set_git_status_defaults(zed_style);
+    set_special_state_defaults(zed_style);
+}
+
+/// Diagnostic color families (error/warning/success/info/hint), each with a
+/// hardcoded fallback plus derived background and border.
+fn set_diagnostic_status_defaults(zed_style: &mut ZedThemeStyle) {
     // Error colors (red family)
     if zed_style.error.is_none() {
         zed_style.error = Some("#FF6B6B".to_string());
     }
     if let Some(error) = &zed_style.error {
         if zed_style.error_background.is_none() {
-            zed_style.error_background = Some(format!("{}22", error.trim_start_matches('#')));
+            zed_style.error_background = Some(HexColor::new(error).with_alpha("22"));
         }
         if zed_style.error_border.is_none() {
             zed_style.error_border = Some(error.clone());
@@ -563,7 +622,7 @@ fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
     }
     if let Some(warning) = &zed_style.warning {
         if zed_style.warning_background.is_none() {
-            zed_style.warning_background = Some(format!("{}22", warning.trim_start_matches('#')));
+            zed_style.warning_background = Some(HexColor::new(warning).with_alpha("22"));
         }
         if zed_style.warning_border.is_none() {
             zed_style.warning_border = Some(warning.clone());
@@ -576,7 +635,7 @@ fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
     }
     if let Some(success) = &zed_style.success {
         if zed_style.success_background.is_none() {
-            zed_style.success_background = Some(format!("{}22", success.trim_start_matches('#')));
+            zed_style.success_background = Some(HexColor::new(success).with_alpha("22"));
         }
         if zed_style.success_border.is_none() {
             zed_style.success_border = Some(success.clone());
@@ -589,7 +648,7 @@ fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
     }
     if let Some(info) = &zed_style.info {
         if zed_style.info_background.is_none() {
-            zed_style.info_background = Some(format!("{}22", info.trim_start_matches('#')));
+            zed_style.info_background = Some(HexColor::new(info).with_alpha("22"));
         }
         if zed_style.info_border.is_none() {
             zed_style.info_border = Some(info.clone());
@@ -602,13 +661,17 @@ fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
     }
     if let Some(hint) = &zed_style.hint {
         if zed_style.hint_background.is_none() {
-            zed_style.hint_background = Some(format!("{}22", hint.trim_start_matches('#')));
+            zed_style.hint_background = Some(HexColor::new(hint).with_alpha("22"));
         }
         if zed_style.hint_border.is_none() {
             zed_style.hint_border = Some(hint.clone());
         }
     }
+}
 
+/// Git status colors, defaulting to the diagnostic colors, then deriving
+/// background and border for each.
+fn set_git_status_defaults(zed_style: &mut ZedThemeStyle) {
     // Git status colors
     if zed_style.created.is_none() {
         zed_style.created = zed_style.success.clone();
@@ -656,21 +719,24 @@ fn set_semantic_status_colors(zed_style: &mut ZedThemeStyle) {
     ] {
         if let Some(color_val) = color {
             if bg_field.is_none() {
-                *bg_field = Some(format!("{}22", color_val.trim_start_matches('#')));
+                *bg_field = Some(HexColor::new(color_val).with_alpha("22"));
             }
             if border_field.is_none() {
                 *border_field = Some(color_val.clone());
             }
         }
     }
+}
 
+/// Remaining special-state colors: predictive, unreachable, ignored, hidden.
+fn set_special_state_defaults(zed_style: &mut ZedThemeStyle) {
     // Predictive and other special states
     if zed_style.predictive.is_none() {
         zed_style.predictive = Some("#8E8E93".to_string());
     }
     if let Some(predictive) = &zed_style.predictive {
         if zed_style.predictive_background.is_none() {
-            zed_style.predictive_background = Some(format!("{}22", predictive.trim_start_matches('#')));
+            zed_style.predictive_background = Some(HexColor::new(predictive).with_alpha("22"));
         }
         if zed_style.predictive_border.is_none() {
             zed_style.predictive_border = Some(predictive.clone());
@@ -908,7 +974,13 @@ fn map_textmate_scope_to_zed(scope: &str) -> Option<String> {
     }
 }
 
-/// Parses VSCode font style string to Zed FontStyle
+/// Parses a VSCode `fontStyle` string into a Zed `FontStyle`.
+///
+/// TODO: VSCode `fontStyle` is a space-separated set (e.g. "bold italic
+/// strikethrough") plus the empty string for "none". Only a bare
+/// "italic"/"oblique" maps today; "bold", "strikethrough", and any combination
+/// are silently dropped in VSCode→Zed conversion. Parse the full set and route
+/// weight/decoration to the matching Zed fields. See the README TODO.
 fn parse_font_style(font_style: &Option<String>) -> Option<FontStyle> {
     match font_style.as_deref() {
         Some("italic") => Some(FontStyle::Italic),
@@ -998,7 +1070,7 @@ fn create_default_players(style: &ZedThemeStyle) -> Vec<PlayerColor> {
         PlayerColor {
             cursor: Some(base_color.to_string()),
             background: Some(base_color.to_string()),
-            selection: Some(format!("{base_color}22")), // Add alpha
+            selection: Some(HexColor::new(base_color).with_alpha("22")), // Add alpha
         },
         PlayerColor {
             cursor: Some("#FF6B6B".to_string()),
@@ -1064,6 +1136,40 @@ mod tests {
         assert!(!is_transparent("#eb6f92"));
         assert!(!is_transparent("#000000"));
         assert!(!is_transparent("#000"));
+    }
+
+    #[test]
+    fn derived_translucent_colors_keep_leading_hash() {
+        // Regression: translucent colors are synthesized by appending a 2-digit
+        // alpha suffix. The result must stay `#rrggbbaa` — a hash-less `rrggbbaa`
+        // is silently rejected by Zed. (See HexColor.)
+        let vscode_theme =
+            VsCodeTheme::read("fixtures/vscode/mvllow.rose-pine-2.14.0/themes/rose-pine-moon-color-theme.json")
+                .expect("Failed to load VSCode theme");
+        let zed: ZedTheme = (&vscode_theme).into();
+
+        // A known derived translucent field must keep its leading '#'.
+        let drop_target = zed
+            .style
+            .drop_target_background
+            .as_deref()
+            .expect("drop_target_background is derived from the editor background");
+        assert!(
+            drop_target.starts_with('#') && drop_target.len() == 9,
+            "derived alpha color must be #rrggbbaa, got {drop_target:?}"
+        );
+
+        // No top-level color field may be a hash-less hex string.
+        let style = serde_json::to_value(&zed.style).expect("style serializes");
+        for (field, value) in style.as_object().expect("style is a JSON object") {
+            if let Some(s) = value.as_str()
+                && !s.starts_with('#')
+                && (s.len() == 6 || s.len() == 8)
+                && s.chars().all(|c| c.is_ascii_hexdigit())
+            {
+                panic!("field `{field}` has a hash-less hex color: {s:?}");
+            }
+        }
     }
 
     #[test]

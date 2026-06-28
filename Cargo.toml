@@ -19,7 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.4.0", features = ["derive", "wrap_help"] }
-fast-glob = "0.4.5"
+fast-glob = "1.0.1"
 home = "0.5.11"
 log = "0.4.27"
 lovely_env_logger = "0.6.2"
@@ -31,7 +31,7 @@ serde_with = "3.8.1"
 slug = "0.1.6"
 strsim = "0.11.1"
 thiserror = "2.0.12"
-toml = "0.8.23"
+toml = "1.1.2"
 walkdir = "2.5.0"
 
 [dev-dependencies]

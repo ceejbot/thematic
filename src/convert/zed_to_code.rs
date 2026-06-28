@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::editors::vscode::{TokenColorRule, TokenColorSettings, TokenColors, TokenScope};
+use crate::editors::vscode::{ThemeType, TokenColorRule, TokenColorSettings, TokenColors, TokenScope};
 use crate::editors::zed::{Appearance, FontStyle, ZedThemeStyle};
 use crate::{VsCodeTheme, ZedTheme, ZedThemeFamily};
 
@@ -13,12 +13,12 @@ impl From<&ZedThemeFamily> for Vec<VsCodeTheme> {
 impl From<&ZedTheme> for VsCodeTheme {
     fn from(value: &ZedTheme) -> Self {
         let theme_type = match value.appearance {
-            Appearance::Dark => "dark",
-            Appearance::Light => "light",
+            Appearance::Dark => ThemeType::Dark,
+            Appearance::Light => ThemeType::Light,
         };
 
         let mut theme = VsCodeTheme::new(value.name.clone());
-        theme.theme_type = Some(theme_type.to_string());
+        theme.theme_type = Some(theme_type);
 
         // Map UI colors from Zed to VSCode
         let colors = map_zed_to_vscode_colors(&value.style);
@@ -318,7 +318,7 @@ mod tests {
         let vscode_theme: VsCodeTheme = thematic.into();
 
         assert_eq!(vscode_theme.name, "Rosé Pine Moon");
-        assert_eq!(vscode_theme.theme_type, Some("dark".to_string()));
+        assert_eq!(vscode_theme.theme_type, Some(ThemeType::Dark));
         assert!(vscode_theme.colors.is_some());
         assert!(vscode_theme.token_colors.is_some());
     }

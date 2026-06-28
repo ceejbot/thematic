@@ -39,7 +39,7 @@ Options:
 
 This was about two-thirds done with some targeted prompting of Claude Sonnet 4, including refactoring when it didn't do a good enough job. The remaining third was me losing patience with telling the intern what to do exactly. Having it do the tedious map-schemas-to-structs part was worth it, as was the From<T> implementations. It was also sort of okay at writing voluminous tests. When it got going with a solid prompt would slam up against consecutive tool use limits very quickly.
 
-My initial input to it was the schemas for both theme formats (in the [schemas directory](./schemas) and examples of each (in the [fixtures directory](./fixtures)). I had to do quite a lot of prompting to refactor the results into usability, and it's still pretty messy by even my shoddy standards.
+My initial input to it was the schemas for both theme formats (in the [schemas directory](./docs/schemas) and examples of each (in the [fixtures directory](./fixtures)). I had to do quite a lot of prompting to refactor the results into usability, and it's still pretty messy by even my shoddy standards.
 
 The schema for Zed themes is at [https://zed.dev/schema/themes/v0.2.0.json](https://zed.dev/schema/themes/v0.2.0.json).
 
@@ -57,6 +57,7 @@ Well, there's a file for telling Claude how to work. It also tells humans how to
 ## TODO
 
 - [ ] Handle some parts of Zed themes that VSCode doesn't do.
+- [ ] Parse VSCode `fontStyle` combinations (e.g. "bold italic strikethrough"). Today only "italic"/"oblique" map; bold and strikethrough are dropped in VSCode→Zed conversion.
 - [x] Convert icon themes (including file copying).
 - [x] Polish up the user-visible output.
 - [x] Clean up code architecture.

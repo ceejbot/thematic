@@ -11,8 +11,7 @@ use crate::editors::ThemeFile;
 use crate::icon_files::IconFileManager;
 use crate::vscode::VsCodeIconTheme;
 
-/// The schema for Zed icon themes is here:
-/// "$schema": "https://zed.dev/schema/icon_themes/v0.2.0.json
+/// The schema for Zed icon themes is <https://zed.dev/schema/icon_themes/v0.2.0.json>.
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZedIconThemeFamily {

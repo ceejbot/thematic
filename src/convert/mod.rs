@@ -1,10 +1,11 @@
 pub mod code_to_zed;
+pub(crate) mod color;
 pub mod zed_to_code;
 
 #[cfg(test)]
 mod tests {
     use crate::editors::ThemeFile;
-    use crate::editors::vscode::{TokenColors, TokenScope};
+    use crate::editors::vscode::{ThemeType, TokenColors, TokenScope};
     use crate::editors::zed::Appearance;
     use crate::{VsCodeTheme, ZedTheme, ZedThemeFamily};
 
@@ -22,7 +23,7 @@ mod tests {
         assert_eq!(zed_rose_pine.name, "Rosé Pine Moon");
         assert!(matches!(zed_rose_pine.appearance, Appearance::Dark));
         assert_eq!(vscode_converted_back.name, "Rosé Pine Moon");
-        assert_eq!(vscode_converted_back.theme_type, Some("dark".to_string()));
+        assert_eq!(vscode_converted_back.theme_type, Some(ThemeType::Dark));
 
         // Test with Catppuccin Latte (light theme)
         let vscode_latte = VsCodeTheme::read("fixtures/vscode/catppuccin.catppuccin-vsc-3.17.0/themes/latte.json")
@@ -35,7 +36,7 @@ mod tests {
         assert_eq!(zed_latte.name, "Catppuccin Latte");
         assert!(matches!(zed_latte.appearance, Appearance::Light));
         assert_eq!(vscode_latte_converted_back.name, "Catppuccin Latte");
-        assert_eq!(vscode_latte_converted_back.theme_type, Some("light".to_string()));
+        assert_eq!(vscode_latte_converted_back.theme_type, Some(ThemeType::Light));
 
         // Verify essential colors are mapped
         assert!(zed_rose_pine.style.editor_background.is_some());
