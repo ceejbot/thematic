@@ -772,11 +772,12 @@ fn map_syntax_highlighting(vscode_theme: &VsCodeTheme) -> HashMap<String, Highli
 
 /// Maps a single VSCode token color rule to Zed syntax entries
 fn map_token_rule_to_zed(rule: &TokenColorRule, syntax_map: &mut HashMap<String, HighlightStyle>) {
+    let (font_style, font_weight) = parse_font_style(&rule.settings.font_style);
     let highlight_style = HighlightStyle {
         color: rule.settings.foreground.clone(),
         background_color: rule.settings.background.clone(),
-        font_style: parse_font_style(&rule.settings.font_style),
-        font_weight: None, // VSCode doesn't have direct font weight in token colors
+        font_style,
+        font_weight,
     };
 
     if let Some(scope) = &rule.scope {
@@ -974,19 +975,29 @@ fn map_textmate_scope_to_zed(scope: &str) -> Option<String> {
     }
 }
 
-/// Parses a VSCode `fontStyle` string into a Zed `FontStyle`.
+/// Parses a VSCode `fontStyle` set into Zed's `font_style` + `font_weight`.
 ///
-/// TODO: VSCode `fontStyle` is a space-separated set (e.g. "bold italic
-/// strikethrough") plus the empty string for "none". Only a bare
-/// "italic"/"oblique" maps today; "bold", "strikethrough", and any combination
-/// are silently dropped in VSCode→Zed conversion. Parse the full set and route
-/// weight/decoration to the matching Zed fields. See the README TODO.
-fn parse_font_style(font_style: &Option<String>) -> Option<FontStyle> {
-    match font_style.as_deref() {
-        Some("italic") => Some(FontStyle::Italic),
-        Some("oblique") => Some(FontStyle::Oblique),
-        _ => None,
+/// VSCode `fontStyle` is a space-separated set of keywords (e.g. "bold italic
+/// strikethrough"), or the empty string to unset. `italic`/`oblique` map to
+/// `font_style` and `bold` to `font_weight`. `underline`/`strikethrough` have
+/// no Zed equivalent and are dropped (logged at debug).
+fn parse_font_style(font_style: &Option<String>) -> (Option<FontStyle>, Option<FontWeight>) {
+    let mut style = None;
+    let mut weight = None;
+    if let Some(raw) = font_style.as_deref() {
+        for token in raw.split_whitespace() {
+            match token.to_ascii_lowercase().as_str() {
+                "italic" => style = Some(FontStyle::Italic),
+                "oblique" => style = Some(FontStyle::Oblique),
+                "bold" => weight = Some(FontWeight::Number(700)),
+                dropped @ ("underline" | "strikethrough") => {
+                    log::debug!("Zed has no {dropped} support; dropping it from fontStyle \"{raw}\"");
+                }
+                other => log::debug!("Unrecognized fontStyle keyword \"{other}\" in \"{raw}\""),
+            }
+        }
     }
+    (style, weight)
 }
 
 /// Adds default syntax colors if they're missing
@@ -1228,5 +1239,56 @@ mod tests {
         assert_eq!(zed.style.warning.as_deref(), Some("#fab387"));
         assert_eq!(zed.style.info.as_deref(), Some("#89b4fa"));
         assert!(zed.style.text_disabled.is_some());
+    }
+
+    #[test]
+    fn font_style_empty_or_none_is_unset() {
+        assert_eq!(parse_font_style(&None), (None, None));
+        assert_eq!(parse_font_style(&Some(String::new())), (None, None));
+    }
+
+    #[test]
+    fn font_style_single_keywords() {
+        assert_eq!(
+            parse_font_style(&Some("italic".to_string())),
+            (Some(FontStyle::Italic), None)
+        );
+        assert_eq!(
+            parse_font_style(&Some("oblique".to_string())),
+            (Some(FontStyle::Oblique), None)
+        );
+        assert_eq!(
+            parse_font_style(&Some("bold".to_string())),
+            (None, Some(FontWeight::Number(700)))
+        );
+    }
+
+    #[test]
+    fn font_style_bold_italic_combination_is_order_independent() {
+        let expected = (Some(FontStyle::Italic), Some(FontWeight::Number(700)));
+        assert_eq!(parse_font_style(&Some("bold italic".to_string())), expected);
+        assert_eq!(parse_font_style(&Some("italic bold".to_string())), expected);
+    }
+
+    #[test]
+    fn font_style_drops_underline_and_strikethrough() {
+        // Zed has no field for these decorations; the rest of the set still maps.
+        assert_eq!(
+            parse_font_style(&Some("italic strikethrough".to_string())),
+            (Some(FontStyle::Italic), None)
+        );
+        assert_eq!(
+            parse_font_style(&Some("bold strikethrough".to_string())),
+            (None, Some(FontWeight::Number(700)))
+        );
+        assert_eq!(parse_font_style(&Some("underline".to_string())), (None, None));
+    }
+
+    #[test]
+    fn font_style_tolerates_extra_whitespace() {
+        assert_eq!(
+            parse_font_style(&Some("  bold   italic  ".to_string())),
+            (Some(FontStyle::Italic), Some(FontWeight::Number(700)))
+        );
     }
 }

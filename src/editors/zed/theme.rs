@@ -405,7 +405,7 @@ pub struct HighlightStyle {
 }
 
 /// Font style options
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum FontStyle {
     Normal,
@@ -414,7 +414,7 @@ pub enum FontStyle {
 }
 
 /// Font weight - can be a number or named weight
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum FontWeight {
     Number(u16),
@@ -422,7 +422,7 @@ pub enum FontWeight {
 }
 
 /// Named font weights
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum NamedFontWeight {
     Thin,

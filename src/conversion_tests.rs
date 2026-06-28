@@ -9,6 +9,8 @@ use std::path::PathBuf;
 use pretty_assertions::assert_eq;
 
 use crate::editors::{Extension, ThemeFile, VsCodeExtension, ZedExtension};
+use crate::vscode::TokenColors;
+use crate::zed::{FontStyle, FontWeight};
 use crate::{ThemeError, VsCodeTheme, ZedManifest, ZedTheme, ZedThemeFamily};
 
 const FIXTURES_DIR: &str = env!("CARGO_MANIFEST_DIR");
@@ -252,6 +254,45 @@ fn round_trip_zed_to_vscode_to_zed() {
             "Background styles should be preserved"
         );
     }
+}
+
+#[test]
+fn font_style_combination_round_trips() {
+    // A VSCode `fontStyle` set ("bold italic") must split into Zed's separate
+    // `font_style` + `font_weight`, then reassemble on the way back.
+    let json = r##"{
+        "name": "Font Style Test",
+        "type": "dark",
+        "tokenColors": [
+            { "scope": "comment", "settings": { "foreground": "#abcdef", "fontStyle": "bold italic" } }
+        ]
+    }"##;
+    let vscode: VsCodeTheme = serde_json::from_str(json).expect("minimal theme json should parse");
+
+    // Forward: "bold italic" -> font_style: italic + font_weight: 700 on the Zed
+    // "comment" key.
+    let zed = ZedTheme::from(&vscode);
+    let comment = zed
+        .style
+        .syntax
+        .as_ref()
+        .and_then(|syntax| syntax.get("comment"))
+        .expect("comment syntax entry should exist");
+    assert_eq!(comment.font_style, Some(FontStyle::Italic));
+    assert_eq!(comment.font_weight, Some(FontWeight::Number(700)));
+
+    // Reverse: italic + bold weight reassemble to the VSCode keyword set "italic
+    // bold". The reverse mapping tags each rule with the Zed key as its `name`.
+    let back = VsCodeTheme::from(&zed);
+    let rules = match back.token_colors {
+        Some(TokenColors::Rules(rules)) => rules,
+        other => panic!("expected token color rules, got {other:?}"),
+    };
+    let comment_rule = rules
+        .iter()
+        .find(|rule| rule.name.as_deref() == Some("comment"))
+        .expect("a round-tripped comment rule should exist");
+    assert_eq!(comment_rule.settings.font_style.as_deref(), Some("italic bold"));
 }
 
 #[test]

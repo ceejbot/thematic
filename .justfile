@@ -1,6 +1,4 @@
-BINNAME := "thematic"
-RELATIVE_TAP_PATH := "../../../homebrew-tap/"
-
+# List just recipes.
 _help:
     just -l
 
@@ -14,7 +12,7 @@ _help:
 
 # Run the same checks we run in CI. Requires nightly.
 @ci: test
-    cargo clippy --all-targets
+    cargo clippy --all-targets -- -D warnings
     cargo +nightly fmt --check
 
 # Clean everything up
@@ -39,27 +37,3 @@ version BUMP:
     git commit Cargo.toml Cargo.lock -m "v${version}"
     git tag "v${version}"
     echo "Release tagged for version v${version}"
-
-# Release by hand instead of in action.
-release:
-    #!/usr/bin/env bash
-    set -e
-
-    mkdir -p dist
-    cd dist
-    tag=$(git describe --tags --abbrev=0)
-    # fails if this already exists
-    release_url=$(gh release create "$tag" --generate-notes)
-
-    for target in "aarch64-apple-darwin" "x86_64-apple-darwin"; do
-    	cargo +stable build --release --target $target
-    	tar czf {{ BINNAME }}-$target.tar.gz --strip-components=2  target/$target/release/{{ BINNAME }}
-    	gh release upload "$tag" "{{ BINNAME }}-$target.tar.gz"
-    	sha256sum {{ BINNAME }}-$target.tar.gz > {{ BINNAME }}-"$target".tar.gz.sha256
-    	gh release upload "$tag" "{{ BINNAME }}-$target.tar.gz.sha256"
-    done
-    formula_file=$(formulaic ../Cargo.toml)
-    mv dist/$formula_file {{ RELATIVE_TAP_PATH }}/Formula/
-    cd {{ RELATIVE_TAP_PATH }} || exit
-    git add Formula/$(basename $formula_file)
-    git commit -m "$(basename -s .rb $formula_file) $tag"

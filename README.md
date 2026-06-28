@@ -57,7 +57,7 @@ Well, there's a file for telling Claude how to work. It also tells humans how to
 ## TODO
 
 - [ ] Handle some parts of Zed themes that VSCode doesn't do.
-- [ ] Parse VSCode `fontStyle` combinations (e.g. "bold italic strikethrough"). Today only "italic"/"oblique" map; bold and strikethrough are dropped in VSCode→Zed conversion.
+- [x] Parse VSCode `fontStyle` combinations (e.g. "bold italic"). `italic`/`oblique` map to Zed's `font_style` and `bold` to `font_weight`, in both directions. `underline`/`strikethrough` are dropped because Zed's theme format has no field for them.
 - [x] Convert icon themes (including file copying).
 - [x] Polish up the user-visible output.
 - [x] Clean up code architecture.

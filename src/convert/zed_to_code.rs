@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::editors::vscode::{ThemeType, TokenColorRule, TokenColorSettings, TokenColors, TokenScope};
-use crate::editors::zed::{Appearance, FontStyle, ZedThemeStyle};
+use crate::editors::zed::{Appearance, FontStyle, FontWeight, HighlightStyle, NamedFontWeight, ZedThemeStyle};
 use crate::{VsCodeTheme, ZedTheme, ZedThemeFamily};
 
 impl From<&ZedThemeFamily> for Vec<VsCodeTheme> {
@@ -247,11 +247,7 @@ fn map_zed_syntax_to_vscode(zed_style: &ZedThemeStyle) -> Vec<TokenColorRule> {
                 let settings = TokenColorSettings {
                     foreground: highlight_style.color.clone(),
                     background: highlight_style.background_color.clone(),
-                    font_style: highlight_style.font_style.as_ref().map(|fs| match fs {
-                        FontStyle::Italic => "italic".to_string(),
-                        FontStyle::Oblique => "oblique".to_string(),
-                        FontStyle::Normal => "normal".to_string(),
-                    }),
+                    font_style: build_vscode_font_style(highlight_style),
                 };
 
                 let scope = if vscode_scopes.len() == 1 {
@@ -270,6 +266,39 @@ fn map_zed_syntax_to_vscode(zed_style: &ZedThemeStyle) -> Vec<TokenColorRule> {
     }
 
     rules
+}
+
+/// Assembles a VSCode `fontStyle` string from Zed's `font_style` +
+/// `font_weight`.
+///
+/// Zed's `normal` style and any non-bold weight have no VSCode keyword, so they
+/// are omitted; an empty result becomes `None` (VSCode's "unset").
+/// `font_weight` at bold or heavier maps to the `bold` keyword (the only weight
+/// VSCode expresses).
+fn build_vscode_font_style(style: &HighlightStyle) -> Option<String> {
+    let mut keywords = Vec::new();
+    match &style.font_style {
+        Some(FontStyle::Italic) => keywords.push("italic"),
+        Some(FontStyle::Oblique) => keywords.push("oblique"),
+        Some(FontStyle::Normal) | None => {}
+    }
+    if style.font_weight.as_ref().is_some_and(font_weight_is_bold) {
+        keywords.push("bold");
+    }
+    (!keywords.is_empty()).then(|| keywords.join(" "))
+}
+
+/// Whether a Zed `font_weight` is bold or heavier (i.e. maps to VSCode `bold`).
+fn font_weight_is_bold(weight: &FontWeight) -> bool {
+    match weight {
+        FontWeight::Number(n) => *n >= 700,
+        FontWeight::Named(named) => {
+            matches!(
+                named,
+                NamedFontWeight::Bold | NamedFontWeight::ExtraBold | NamedFontWeight::Black
+            )
+        }
+    }
 }
 
 /// Maps Zed syntax keys to VSCode TextMate scopes
@@ -341,5 +370,43 @@ mod tests {
 
         let scopes = map_zed_key_to_textmate_scopes("function").unwrap();
         assert!(scopes.contains(&"entity.name.function".to_string()));
+    }
+
+    fn highlight(font_style: Option<FontStyle>, font_weight: Option<FontWeight>) -> HighlightStyle {
+        HighlightStyle {
+            color: None,
+            font_style,
+            font_weight,
+            background_color: None,
+        }
+    }
+
+    #[test]
+    fn vscode_font_style_combines_italic_and_bold() {
+        let style = highlight(Some(FontStyle::Italic), Some(FontWeight::Number(700)));
+        assert_eq!(build_vscode_font_style(&style).as_deref(), Some("italic bold"));
+    }
+
+    #[test]
+    fn vscode_font_style_weight_only_is_bold() {
+        let style = highlight(None, Some(FontWeight::Named(NamedFontWeight::Bold)));
+        assert_eq!(build_vscode_font_style(&style).as_deref(), Some("bold"));
+    }
+
+    #[test]
+    fn vscode_font_style_normal_and_light_is_unset() {
+        // `normal` and non-bold weights have no VSCode keyword, so the result is None.
+        let style = highlight(Some(FontStyle::Normal), Some(FontWeight::Number(400)));
+        assert_eq!(build_vscode_font_style(&style), None);
+        assert_eq!(build_vscode_font_style(&highlight(None, None)), None);
+    }
+
+    #[test]
+    fn font_weight_bold_threshold() {
+        assert!(font_weight_is_bold(&FontWeight::Number(700)));
+        assert!(font_weight_is_bold(&FontWeight::Number(900)));
+        assert!(!font_weight_is_bold(&FontWeight::Number(400)));
+        assert!(font_weight_is_bold(&FontWeight::Named(NamedFontWeight::ExtraBold)));
+        assert!(!font_weight_is_bold(&FontWeight::Named(NamedFontWeight::Medium)));
     }
 }
